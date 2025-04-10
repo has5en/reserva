@@ -16,10 +16,12 @@ interface User {
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, remember?: boolean) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   hasRole: (role: UserRole) => boolean;
+  loginAttempts: number;
+  resetLoginAttempts: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,17 +57,23 @@ const MOCK_USERS = [
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loginAttempts, setLoginAttempts] = useState(0);
 
   useEffect(() => {
     // Check for saved user in localStorage
     const savedUser = localStorage.getItem('user');
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    
     if (savedUser) {
       setCurrentUser(JSON.parse(savedUser));
+    } else if (rememberedEmail) {
+      // If email is remembered but not logged in, we don't set the user
+      // but we could pre-fill the email field in the login form
     }
     setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, remember = false) => {
     setLoading(true);
     
     try {
@@ -76,11 +84,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { password: _, ...userWithoutPassword } = user;
         setCurrentUser(userWithoutPassword);
         localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+        
+        // Handle remember me functionality
+        if (remember) {
+          localStorage.setItem('rememberedEmail', email);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+        }
+        
+        // Reset login attempts on successful login
+        setLoginAttempts(0);
+        
         toast({
           title: "Connexion réussie",
           description: `Bienvenue, ${userWithoutPassword.name}!`,
         });
       } else {
+        // Increment login attempts
+        setLoginAttempts(prev => prev + 1);
         throw new Error('Invalid credentials');
       }
     } catch (error) {
@@ -98,6 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem('user');
+    // We don't remove rememberedEmail on logout
     toast({
       title: "Déconnexion réussie",
       description: "À bientôt!",
@@ -108,13 +130,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return currentUser?.role === role;
   };
 
+  const resetLoginAttempts = () => {
+    setLoginAttempts(0);
+  };
+
   const value = {
     currentUser,
     loading,
     login,
     logout,
     isAuthenticated: !!currentUser,
-    hasRole
+    hasRole,
+    loginAttempts,
+    resetLoginAttempts
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
