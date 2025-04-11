@@ -155,10 +155,10 @@ const SupervisorStats = () => {
 
   const config = {
     total: { label: 'Total' },
-    approved: { label: 'Approuvé', theme: { light: '#0088FE' } },
-    rejected: { label: 'Rejeté', theme: { light: '#FF8042' } },
-    admin_approved: { label: 'Approuvé admin', theme: { light: '#00C49F' } },
-    rate: { label: 'Taux d\'approbation', theme: { light: '#9c27b0' } }
+    approved: { label: 'Approuvé', theme: { light: '#0088FE', dark: '#0088FE' } },
+    rejected: { label: 'Rejeté', theme: { light: '#FF8042', dark: '#FF8042' } },
+    admin_approved: { label: 'Approuvé admin', theme: { light: '#00C49F', dark: '#00C49F' } },
+    rate: { label: 'Taux d\'approbation', theme: { light: '#9c27b0', dark: '#9c27b0' } }
   };
 
   return (
@@ -176,6 +176,113 @@ const SupervisorStats = () => {
                   <TabsTrigger value="approval-rate">Taux d'approbation</TabsTrigger>
                   <TabsTrigger value="details">Détails</TabsTrigger>
                 </TabsList>
+
+                {loading ? (
+                  <div className="text-center py-8">Chargement des statistiques...</div>
+                ) : (
+                  <>
+                    <TabsContent value="overview" className="mt-0">
+                      <div className="h-[400px]">
+                        <ChartContainer config={config}>
+                          <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="period" angle={-45} textAnchor="end" height={60} />
+                            <YAxis />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Legend />
+                            <Bar dataKey="approved" name="Approuvé" fill="#0088FE" />
+                            <Bar dataKey="rejected" name="Rejeté" fill="#FF8042" />
+                            <Bar dataKey="admin_approved" name="En attente d'approbation finale" fill="#00C49F" />
+                          </BarChart>
+                        </ChartContainer>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="approval-rate" className="mt-0">
+                      <div className="h-[400px]">
+                        <ChartContainer config={config}>
+                          <LineChart data={approvalRateData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="period" angle={-45} textAnchor="end" height={60} />
+                            <YAxis domain={[0, 100]} label={{ value: 'Taux (%)', angle: -90, position: 'insideLeft' }} />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Legend />
+                            <Line type="monotone" dataKey="rate" name="Taux d'approbation (%)" stroke="#9c27b0" />
+                          </LineChart>
+                        </ChartContainer>
+                      </div>
+                      
+                      <div className="mt-6">
+                        <Card>
+                          <CardContent className="p-4">
+                            <h3 className="text-lg font-medium mb-2">Taux d'approbation moyen</h3>
+                            <div className="text-3xl font-bold">
+                              {approvalRateData.length > 0 
+                                ? (approvalRateData.reduce((acc, curr) => acc + curr.rate, 0) / approvalRateData.length).toFixed(1) + '%'
+                                : '0%'
+                              }
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="details" className="mt-0">
+                      <div className="flex flex-col md:flex-row gap-6">
+                        <div className="md:w-1/2">
+                          <h3 className="text-lg font-medium mb-2">Distribution par type de demande</h3>
+                          <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={typeData}
+                                  cx="50%"
+                                  cy="50%"
+                                  labelLine={false}
+                                  outerRadius={100}
+                                  fill="#8884d8"
+                                  dataKey="value"
+                                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                >
+                                  {typeData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                  ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                        <div className="md:w-1/2">
+                          <h3 className="text-lg font-medium mb-2">Distribution par statut</h3>
+                          <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={statusData}
+                                  cx="50%"
+                                  cy="50%"
+                                  labelLine={false}
+                                  outerRadius={100}
+                                  fill="#8884d8"
+                                  dataKey="value"
+                                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                >
+                                  {statusData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                  ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </>
+                )}
               </Tabs>
               
               <div className="w-full md:w-48 mt-4 md:mt-0">
@@ -194,113 +301,6 @@ const SupervisorStats = () => {
                 </Select>
               </div>
             </div>
-
-            {loading ? (
-              <div className="text-center py-8">Chargement des statistiques...</div>
-            ) : (
-              <>
-                <TabsContent value="overview" className="mt-0">
-                  <div className="h-[400px]">
-                    <ChartContainer config={config}>
-                      <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="period" angle={-45} textAnchor="end" height={60} />
-                        <YAxis />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Legend />
-                        <Bar dataKey="approved" name="Approuvé" fill="#0088FE" />
-                        <Bar dataKey="rejected" name="Rejeté" fill="#FF8042" />
-                        <Bar dataKey="admin_approved" name="En attente d'approbation finale" fill="#00C49F" />
-                      </BarChart>
-                    </ChartContainer>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="approval-rate" className="mt-0">
-                  <div className="h-[400px]">
-                    <ChartContainer config={config}>
-                      <LineChart data={approvalRateData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="period" angle={-45} textAnchor="end" height={60} />
-                        <YAxis domain={[0, 100]} label={{ value: 'Taux (%)', angle: -90, position: 'insideLeft' }} />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Legend />
-                        <Line type="monotone" dataKey="rate" name="Taux d'approbation (%)" stroke="#9c27b0" />
-                      </LineChart>
-                    </ChartContainer>
-                  </div>
-                  
-                  <div className="mt-6">
-                    <Card>
-                      <CardContent className="p-4">
-                        <h3 className="text-lg font-medium mb-2">Taux d'approbation moyen</h3>
-                        <div className="text-3xl font-bold">
-                          {approvalRateData.length > 0 
-                            ? (approvalRateData.reduce((acc, curr) => acc + curr.rate, 0) / approvalRateData.length).toFixed(1) + '%'
-                            : '0%'
-                          }
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="details" className="mt-0">
-                  <div className="flex flex-col md:flex-row gap-6">
-                    <div className="md:w-1/2">
-                      <h3 className="text-lg font-medium mb-2">Distribution par type de demande</h3>
-                      <div className="h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={typeData}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={false}
-                              outerRadius={100}
-                              fill="#8884d8"
-                              dataKey="value"
-                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                            >
-                              {typeData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <Tooltip />
-                            <Legend />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                    <div className="md:w-1/2">
-                      <h3 className="text-lg font-medium mb-2">Distribution par statut</h3>
-                      <div className="h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={statusData}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={false}
-                              outerRadius={100}
-                              fill="#8884d8"
-                              dataKey="value"
-                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                            >
-                              {statusData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <Tooltip />
-                            <Legend />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-              </>
-            )}
           </CardContent>
         </Card>
       </div>

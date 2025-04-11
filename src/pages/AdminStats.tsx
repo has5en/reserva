@@ -138,10 +138,10 @@ const AdminStats = () => {
 
   const config = {
     total: { label: 'Total' },
-    approved: { label: 'Approuvé', theme: { light: '#0088FE' } },
-    rejected: { label: 'Rejeté', theme: { light: '#FF8042' } },
-    pending: { label: 'En attente', theme: { light: '#FFBB28' } },
-    admin_approved: { label: 'Approuvé admin', theme: { light: '#00C49F' } },
+    approved: { label: 'Approuvé', theme: { light: '#0088FE', dark: '#0088FE' } },
+    rejected: { label: 'Rejeté', theme: { light: '#FF8042', dark: '#FF8042' } },
+    pending: { label: 'En attente', theme: { light: '#FFBB28', dark: '#FFBB28' } },
+    admin_approved: { label: 'Approuvé admin', theme: { light: '#00C49F', dark: '#00C49F' } },
   };
 
   return (
@@ -159,6 +159,142 @@ const AdminStats = () => {
                   <TabsTrigger value="by-type">Par type</TabsTrigger>
                   <TabsTrigger value="by-status">Par statut</TabsTrigger>
                 </TabsList>
+              
+                {loading ? (
+                  <div className="text-center py-8">Chargement des statistiques...</div>
+                ) : (
+                  <>
+                    <TabsContent value="overview" className="mt-0">
+                      <div className="h-[400px]">
+                        <ChartContainer config={config}>
+                          <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="period" angle={-45} textAnchor="end" height={60} />
+                            <YAxis />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Legend />
+                            <Bar dataKey="total" name="Total" fill="#8884d8" />
+                            <Bar dataKey="approved" name="Approuvé" fill="#0088FE" />
+                            <Bar dataKey="rejected" name="Rejeté" fill="#FF8042" />
+                          </BarChart>
+                        </ChartContainer>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="by-type" className="mt-0">
+                      <div className="flex flex-col md:flex-row gap-6">
+                        <div className="md:w-1/2">
+                          <h3 className="text-lg font-medium mb-2">Distribution par type de demande</h3>
+                          <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={typeData}
+                                  cx="50%"
+                                  cy="50%"
+                                  labelLine={false}
+                                  outerRadius={100}
+                                  fill="#8884d8"
+                                  dataKey="value"
+                                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                >
+                                  {typeData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                  ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                        <div className="md:w-1/2">
+                          <h3 className="text-lg font-medium mb-2">Statistiques par type</h3>
+                          <div className="space-y-4">
+                            <div className="flex items-center p-3 border rounded-md">
+                              <div className="bg-[#0088FE] h-10 w-10 rounded-full flex items-center justify-center text-white mr-3">
+                                <Building2 size={20} />
+                              </div>
+                              <div>
+                                <h4 className="font-medium">Réservations de salle</h4>
+                                <p className="text-2xl font-bold">{typeData[0].value}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center p-3 border rounded-md">
+                              <div className="bg-[#00C49F] h-10 w-10 rounded-full flex items-center justify-center text-white mr-3">
+                                <Package size={20} />
+                              </div>
+                              <div>
+                                <h4 className="font-medium">Demandes de matériel</h4>
+                                <p className="text-2xl font-bold">{typeData[1].value}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center p-3 border rounded-md">
+                              <div className="bg-[#FFBB28] h-10 w-10 rounded-full flex items-center justify-center text-white mr-3">
+                                <Printer size={20} />
+                              </div>
+                              <div>
+                                <h4 className="font-medium">Demandes d'impression</h4>
+                                <p className="text-2xl font-bold">{typeData[2].value}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="by-status" className="mt-0">
+                      <div className="flex flex-col md:flex-row gap-6">
+                        <div className="md:w-1/2">
+                          <h3 className="text-lg font-medium mb-2">Distribution par statut</h3>
+                          <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={statusData}
+                                  cx="50%"
+                                  cy="50%"
+                                  labelLine={false}
+                                  outerRadius={100}
+                                  fill="#8884d8"
+                                  dataKey="value"
+                                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                >
+                                  {statusData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                  ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                        <div className="md:w-1/2">
+                          <h3 className="text-lg font-medium mb-2">Statistiques par statut</h3>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="flex flex-col p-3 border rounded-md">
+                              <div className="text-yellow-500 font-medium">En attente</div>
+                              <div className="text-2xl font-bold">{statusData[0].value}</div>
+                            </div>
+                            <div className="flex flex-col p-3 border rounded-md">
+                              <div className="text-green-500 font-medium">Approuvé admin</div>
+                              <div className="text-2xl font-bold">{statusData[1].value}</div>
+                            </div>
+                            <div className="flex flex-col p-3 border rounded-md">
+                              <div className="text-blue-500 font-medium">Approuvé</div>
+                              <div className="text-2xl font-bold">{statusData[2].value}</div>
+                            </div>
+                            <div className="flex flex-col p-3 border rounded-md">
+                              <div className="text-red-500 font-medium">Rejeté</div>
+                              <div className="text-2xl font-bold">{statusData[3].value}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </>
+                )}
               </Tabs>
               
               <div className="w-full md:w-48 mt-4 md:mt-0">
@@ -177,140 +313,6 @@ const AdminStats = () => {
                 </Select>
               </div>
             </div>
-
-            {loading ? (
-              <div className="text-center py-8">Chargement des statistiques...</div>
-            ) : (
-              <TabsContent value="overview" className="mt-0">
-                <div className="h-[400px]">
-                  <ChartContainer config={config}>
-                    <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="period" angle={-45} textAnchor="end" height={60} />
-                      <YAxis />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Legend />
-                      <Bar dataKey="total" name="Total" fill="#8884d8" />
-                      <Bar dataKey="approved" name="Approuvé" fill="#0088FE" />
-                      <Bar dataKey="rejected" name="Rejeté" fill="#FF8042" />
-                    </BarChart>
-                  </ChartContainer>
-                </div>
-              </TabsContent>
-            )}
-
-            <TabsContent value="by-type" className="mt-0">
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="md:w-1/2">
-                  <h3 className="text-lg font-medium mb-2">Distribution par type de demande</h3>
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={typeData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          outerRadius={100}
-                          fill="#8884d8"
-                          dataKey="value"
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        >
-                          {typeData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-                <div className="md:w-1/2">
-                  <h3 className="text-lg font-medium mb-2">Statistiques par type</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center p-3 border rounded-md">
-                      <div className="bg-[#0088FE] h-10 w-10 rounded-full flex items-center justify-center text-white mr-3">
-                        <Building2 size={20} />
-                      </div>
-                      <div>
-                        <h4 className="font-medium">Réservations de salle</h4>
-                        <p className="text-2xl font-bold">{typeData[0].value}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center p-3 border rounded-md">
-                      <div className="bg-[#00C49F] h-10 w-10 rounded-full flex items-center justify-center text-white mr-3">
-                        <Package size={20} />
-                      </div>
-                      <div>
-                        <h4 className="font-medium">Demandes de matériel</h4>
-                        <p className="text-2xl font-bold">{typeData[1].value}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center p-3 border rounded-md">
-                      <div className="bg-[#FFBB28] h-10 w-10 rounded-full flex items-center justify-center text-white mr-3">
-                        <Printer size={20} />
-                      </div>
-                      <div>
-                        <h4 className="font-medium">Demandes d'impression</h4>
-                        <p className="text-2xl font-bold">{typeData[2].value}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="by-status" className="mt-0">
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="md:w-1/2">
-                  <h3 className="text-lg font-medium mb-2">Distribution par statut</h3>
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={statusData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          outerRadius={100}
-                          fill="#8884d8"
-                          dataKey="value"
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        >
-                          {statusData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-                <div className="md:w-1/2">
-                  <h3 className="text-lg font-medium mb-2">Statistiques par statut</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col p-3 border rounded-md">
-                      <div className="text-yellow-500 font-medium">En attente</div>
-                      <div className="text-2xl font-bold">{statusData[0].value}</div>
-                    </div>
-                    <div className="flex flex-col p-3 border rounded-md">
-                      <div className="text-green-500 font-medium">Approuvé admin</div>
-                      <div className="text-2xl font-bold">{statusData[1].value}</div>
-                    </div>
-                    <div className="flex flex-col p-3 border rounded-md">
-                      <div className="text-blue-500 font-medium">Approuvé</div>
-                      <div className="text-2xl font-bold">{statusData[2].value}</div>
-                    </div>
-                    <div className="flex flex-col p-3 border rounded-md">
-                      <div className="text-red-500 font-medium">Rejeté</div>
-                      <div className="text-2xl font-bold">{statusData[3].value}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
           </CardContent>
         </Card>
       </div>
