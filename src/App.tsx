@@ -19,6 +19,7 @@ import ManageResources from "./pages/ManageResources";
 import AvailableRooms from "./pages/AvailableRooms";
 import AdminStats from "./pages/AdminStats";
 import SupervisorStats from "./pages/SupervisorStats";
+import UserManagement from "./pages/UserManagement";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -86,6 +87,11 @@ const App = () => (
             <Route path="/manage-resources" element={
               <ProtectedRoute requiredRole="admin">
                 <ManageResources />
+              </ProtectedRoute>
+            } />
+            <Route path="/user-management" element={
+              <ProtectedRoute>
+                <UserManagement />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

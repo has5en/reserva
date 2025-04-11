@@ -4,13 +4,14 @@ import { toast } from '@/components/ui/use-toast';
 
 export type UserRole = 'teacher' | 'admin' | 'supervisor' | null;
 
-interface User {
+export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
   department?: string;
   classes?: string[];
+  password?: string;
 }
 
 interface AuthContextType {
@@ -22,6 +23,11 @@ interface AuthContextType {
   hasRole: (role: UserRole) => boolean;
   loginAttempts: number;
   resetLoginAttempts: () => void;
+  // User management functions
+  getUsers: (role: UserRole) => User[];
+  addUser: (user: Omit<User, 'id'>) => void;
+  updateUser: (id: string, userData: Partial<User>) => void;
+  deleteUser: (id: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -58,6 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [loginAttempts, setLoginAttempts] = useState(0);
+  const [users, setUsers] = useState<User[]>(MOCK_USERS);
 
   useEffect(() => {
     // Check for saved user in localStorage
@@ -78,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       // Mock authentication
-      const user = MOCK_USERS.find(u => u.email === email && u.password === password);
+      const user = users.find(u => u.email === email && u.password === password);
       
       if (user) {
         const { password: _, ...userWithoutPassword } = user;
@@ -134,6 +141,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoginAttempts(0);
   };
 
+  // User management functions
+  const getUsers = (role: UserRole): User[] => {
+    return users.filter(user => user.role === role);
+  };
+
+  const addUser = (userData: Omit<User, 'id'>): void => {
+    const newUser: User = {
+      ...userData,
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    };
+    
+    // Check if email already exists
+    if (users.some(user => user.email === userData.email)) {
+      throw new Error('Email already exists');
+    }
+    
+    setUsers(prevUsers => [...prevUsers, newUser]);
+  };
+
+  const updateUser = (id: string, userData: Partial<User>): void => {
+    // Check if email already exists and it's not the current user's email
+    if (userData.email && users.some(user => user.email === userData.email && user.id !== id)) {
+      throw new Error('Email already exists');
+    }
+    
+    setUsers(prevUsers => 
+      prevUsers.map(user => 
+        user.id === id 
+          ? { ...user, ...userData, password: userData.password || user.password }
+          : user
+      )
+    );
+    
+    // If the updated user is the current user, update the current user and localStorage
+    if (currentUser && currentUser.id === id) {
+      const updatedUser = { ...currentUser, ...userData };
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      setCurrentUser(userWithoutPassword);
+      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+    }
+  };
+
+  const deleteUser = (id: string): void => {
+    // Prevent deleting the current user
+    if (currentUser && currentUser.id === id) {
+      throw new Error('Cannot delete current user');
+    }
+    
+    setUsers(prevUsers => prevUsers.filter(user => user.id !== id));
+  };
+
   const value = {
     currentUser,
     loading,
@@ -142,7 +200,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAuthenticated: !!currentUser,
     hasRole,
     loginAttempts,
-    resetLoginAttempts
+    resetLoginAttempts,
+    // User management functions
+    getUsers,
+    addUser,
+    updateUser,
+    deleteUser
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

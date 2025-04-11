@@ -10,7 +10,8 @@ import {
   Settings, 
   User,
   Printer,
-  BarChart2
+  BarChart2,
+  Users
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -133,6 +134,15 @@ const Layout = ({ children, title }: LayoutProps) => {
                       <span>Gestion des ressources</span>
                     </Link>
                   </li>
+                  <li>
+                    <Link 
+                      to="/user-management" 
+                      className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
+                    >
+                      <Users className="mr-2 h-5 w-5" />
+                      <span>Gestion des utilisateurs</span>
+                    </Link>
+                  </li>
                 </>
               )}
               
@@ -154,6 +164,15 @@ const Layout = ({ children, title }: LayoutProps) => {
                     >
                       <BarChart2 className="mr-2 h-5 w-5" />
                       <span>Statistiques</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      to="/user-management" 
+                      className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
+                    >
+                      <Users className="mr-2 h-5 w-5" />
+                      <span>Gestion des utilisateurs</span>
                     </Link>
                   </li>
                 </>
