@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Room, Class, RoomType } from '@/data/models';
 import { getAvailableRoomsByType, getClasses, createRequest } from '@/services/dataService';
-import { Building, Calendar, Clock, Users, BookOpen, Computer, Server } from 'lucide-react';
+import { Building, Calendar, Clock, Users, BookOpen, Computer, Beaker } from 'lucide-react';
 
 const RoomReservation = () => {
   const { currentUser } = useAuth();
@@ -25,7 +24,6 @@ const RoomReservation = () => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form state
   const [selectedRoom, setSelectedRoom] = useState<string>('');
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [date, setDate] = useState<string>('');
@@ -35,7 +33,6 @@ const RoomReservation = () => {
   const [signature, setSignature] = useState<string | null>(null);
   const [roomType, setRoomType] = useState<string>('computer_lab');
 
-  // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -49,7 +46,6 @@ const RoomReservation = () => {
         
         setRooms(roomsData);
         
-        // If user is a teacher, filter classes by their department
         if (currentUser?.role === 'teacher' && currentUser?.department) {
           setClasses(classesData.filter(cls => cls.department === currentUser.department));
         } else {
@@ -80,12 +76,10 @@ const RoomReservation = () => {
     if (!endTime) newErrors.endTime = 'Veuillez sélectionner une heure de fin';
     if (!signature) newErrors.signature = 'Veuillez signer la demande';
     
-    // Check if end time is after start time
     if (startTime && endTime && startTime >= endTime) {
       newErrors.endTime = 'L\'heure de fin doit être après l\'heure de début';
     }
     
-    // Check if date is not in the past
     const selectedDate = new Date(date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -154,7 +148,7 @@ const RoomReservation = () => {
       case 'computer_lab':
         return <Computer className="mr-2 h-5 w-5" />;
       case 'science_lab':
-        return <Server className="mr-2 h-5 w-5" />;
+        return <Beaker className="mr-2 h-5 w-5" />;
       case 'classroom':
         return <BookOpen className="mr-2 h-5 w-5" />;
       case 'meeting_room':

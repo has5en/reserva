@@ -2,7 +2,7 @@
 import React from 'react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Computer, Flask, BookOpen, Users } from "lucide-react";
+import { Computer, Beaker, BookOpen, Users } from "lucide-react";
 
 interface RoomTypeSelectorProps {
   selectedType: string;
@@ -17,7 +17,7 @@ const RoomTypeSelector: React.FC<RoomTypeSelectorProps> = ({
 }) => {
   const types = [
     { id: 'computer_lab', name: 'Salle informatique', icon: Computer },
-    { id: 'science_lab', name: 'Laboratoire scientifique', icon: Flask },
+    { id: 'science_lab', name: 'Laboratoire scientifique', icon: Beaker },
     { id: 'classroom', name: 'Salle de classe', icon: BookOpen },
     { id: 'meeting_room', name: 'Salle de réunion', icon: Users }
   ];
