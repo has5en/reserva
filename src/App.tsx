@@ -16,6 +16,9 @@ import RequestDetails from "./pages/RequestDetails";
 import AdminDashboard from "./pages/AdminDashboard";
 import SupervisorDashboard from "./pages/SupervisorDashboard";
 import ManageResources from "./pages/ManageResources";
+import AvailableRooms from "./pages/AvailableRooms";
+import AdminStats from "./pages/AdminStats";
+import SupervisorStats from "./pages/SupervisorStats";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -33,6 +36,11 @@ const App = () => (
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/available-rooms" element={
+              <ProtectedRoute requiredRole="teacher">
+                <AvailableRooms />
               </ProtectedRoute>
             } />
             <Route path="/room-reservation" element={
@@ -60,9 +68,19 @@ const App = () => (
                 <AdminDashboard />
               </ProtectedRoute>
             } />
+            <Route path="/admin-stats" element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminStats />
+              </ProtectedRoute>
+            } />
             <Route path="/supervisor" element={
               <ProtectedRoute requiredRole="supervisor">
                 <SupervisorDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/supervisor-stats" element={
+              <ProtectedRoute requiredRole="supervisor">
+                <SupervisorStats />
               </ProtectedRoute>
             } />
             <Route path="/manage-resources" element={

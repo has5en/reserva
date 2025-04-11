@@ -9,7 +9,8 @@ import {
   Package, 
   Settings, 
   User,
-  Printer
+  Printer,
+  BarChart2
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -63,10 +64,20 @@ const Layout = ({ children, title }: LayoutProps) => {
                 <>
                   <li>
                     <Link 
-                      to="/room-reservation" 
+                      to="/available-rooms" 
                       className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
                     >
                       <Building2 className="mr-2 h-5 w-5" />
+                      <span>Salles disponibles</span>
+                    </Link>
+                  </li>
+                  
+                  <li>
+                    <Link 
+                      to="/room-reservation" 
+                      className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
+                    >
+                      <Calendar className="mr-2 h-5 w-5" />
                       <span>Réserver une salle</span>
                     </Link>
                   </li>
@@ -106,6 +117,15 @@ const Layout = ({ children, title }: LayoutProps) => {
                   </li>
                   <li>
                     <Link 
+                      to="/admin-stats" 
+                      className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
+                    >
+                      <BarChart2 className="mr-2 h-5 w-5" />
+                      <span>Statistiques</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
                       to="/manage-resources" 
                       className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
                     >
@@ -117,15 +137,26 @@ const Layout = ({ children, title }: LayoutProps) => {
               )}
               
               {hasRole('supervisor') && (
-                <li>
-                  <Link 
-                    to="/supervisor" 
-                    className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
-                  >
-                    <Calendar className="mr-2 h-5 w-5" />
-                    <span>Approbation finale</span>
-                  </Link>
-                </li>
+                <>
+                  <li>
+                    <Link 
+                      to="/supervisor" 
+                      className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
+                    >
+                      <Calendar className="mr-2 h-5 w-5" />
+                      <span>Approbation finale</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      to="/supervisor-stats" 
+                      className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
+                    >
+                      <BarChart2 className="mr-2 h-5 w-5" />
+                      <span>Statistiques</span>
+                    </Link>
+                  </li>
+                </>
               )}
             </ul>
           </nav>
