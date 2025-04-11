@@ -43,6 +43,16 @@ export const getAvailableRooms = (date: string, startTime: string, endTime: stri
   return Promise.resolve([...MOCK_ROOMS.filter(room => room.available)]);
 };
 
+export const getAvailableRoomsByType = (date: string, startTime: string, endTime: string, roomType?: string): Promise<Room[]> => {
+  let rooms = [...MOCK_ROOMS.filter(room => room.available)];
+  
+  if (roomType) {
+    rooms = rooms.filter(room => room.type === roomType);
+  }
+  
+  return Promise.resolve(rooms);
+};
+
 // Class services
 export const getClasses = (): Promise<Class[]> => {
   return Promise.resolve([...MOCK_CLASSES]);

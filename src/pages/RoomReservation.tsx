@@ -5,14 +5,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import Layout from '@/components/Layout';
 import SignatureCanvas from '@/components/SignatureCanvas';
+import RoomTypeSelector from '@/components/RoomTypeSelector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Room, Class } from '@/data/models';
-import { getAvailableRooms, getClasses, createRequest } from '@/services/dataService';
+import { Room, Class, RoomType } from '@/data/models';
+import { getAvailableRoomsByType, getClasses, createRequest } from '@/services/dataService';
+import { Building, Calendar, Clock, Users, BookOpen, Computer, Server } from 'lucide-react';
 
 const RoomReservation = () => {
   const { currentUser } = useAuth();
@@ -31,6 +33,7 @@ const RoomReservation = () => {
   const [endTime, setEndTime] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [signature, setSignature] = useState<string | null>(null);
+  const [roomType, setRoomType] = useState<string>('computer_lab');
 
   // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -40,7 +43,7 @@ const RoomReservation = () => {
       setLoading(true);
       try {
         const [roomsData, classesData] = await Promise.all([
-          getAvailableRooms(date, startTime, endTime),
+          getAvailableRoomsByType(date, startTime, endTime, roomType as RoomType),
           getClasses()
         ]);
         
@@ -65,7 +68,7 @@ const RoomReservation = () => {
     };
 
     fetchData();
-  }, [currentUser, date, startTime, endTime]);
+  }, [currentUser, date, startTime, endTime, roomType]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -146,20 +149,50 @@ const RoomReservation = () => {
     }
   };
 
+  const getRoomTypeIcon = (type: RoomType) => {
+    switch (type) {
+      case 'computer_lab':
+        return <Computer className="mr-2 h-5 w-5" />;
+      case 'science_lab':
+        return <Server className="mr-2 h-5 w-5" />;
+      case 'classroom':
+        return <BookOpen className="mr-2 h-5 w-5" />;
+      case 'meeting_room':
+        return <Users className="mr-2 h-5 w-5" />;
+      default:
+        return <Building className="mr-2 h-5 w-5" />;
+    }
+  };
+
   const getSelectedRoomDetails = () => {
     const room = rooms.find(r => r.id === selectedRoom);
     if (!room) return null;
     
     return (
       <div className="space-y-2 p-4 border rounded-md bg-accent">
-        <h3 className="font-semibold">Détails de la salle</h3>
-        <p><span className="font-medium">Capacité:</span> {room.capacity} personnes</p>
-        {room.software && room.software.length > 0 && (
-          <p><span className="font-medium">Logiciels:</span> {room.software.join(', ')}</p>
-        )}
-        {room.equipment && room.equipment.length > 0 && (
-          <p><span className="font-medium">Équipement:</span> {room.equipment.join(', ')}</p>
-        )}
+        <h3 className="font-semibold flex items-center">
+          {getRoomTypeIcon(room.type)}
+          Détails de la salle
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <p><span className="font-medium">Nom:</span> {room.name}</p>
+            <p><span className="font-medium">Capacité:</span> {room.capacity} personnes</p>
+            {room.building && <p><span className="font-medium">Bâtiment:</span> {room.building}</p>}
+            {room.floor && <p><span className="font-medium">Étage:</span> {room.floor}</p>}
+          </div>
+          <div>
+            {room.software && room.software.length > 0 && (
+              <p><span className="font-medium">Logiciels:</span> {room.software.join(', ')}</p>
+            )}
+            {room.equipment && room.equipment.length > 0 && (
+              <p><span className="font-medium">Équipement:</span> {room.equipment.join(', ')}</p>
+            )}
+            {room.description && (
+              <p><span className="font-medium">Description:</span> {room.description}</p>
+            )}
+          </div>
+        </div>
       </div>
     );
   };
@@ -170,7 +203,10 @@ const RoomReservation = () => {
     
     return (
       <div className="space-y-2 p-4 border rounded-md bg-accent">
-        <h3 className="font-semibold">Détails de la classe</h3>
+        <h3 className="font-semibold flex items-center">
+          <Users className="mr-2 h-5 w-5" />
+          Détails de la classe
+        </h3>
         <p><span className="font-medium">Effectif:</span> {selectedClassData.studentCount} étudiants</p>
         <p><span className="font-medium">Département:</span> {selectedClassData.department}</p>
       </div>
@@ -179,26 +215,47 @@ const RoomReservation = () => {
 
   return (
     <Layout title="Réservation de salle">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Building className="mr-2 h-6 w-6" />
+              Réservation de salle ou laboratoire
+            </CardTitle>
+          </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="date">Date de réservation</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className={errors.date ? 'border-red-500' : ''}
+                  <Label>Type d'espace</Label>
+                  <RoomTypeSelector 
+                    selectedType={roomType} 
+                    onChange={setRoomType} 
+                    className="mt-2"
                   />
-                  {errors.date && <p className="text-sm text-red-500 mt-1">{errors.date}</p>}
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="col-span-1 md:col-span-1">
+                    <Label htmlFor="date" className="flex items-center">
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Date
+                    </Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className={errors.date ? 'border-red-500' : ''}
+                    />
+                    {errors.date && <p className="text-sm text-red-500 mt-1">{errors.date}</p>}
+                  </div>
+                
                   <div>
-                    <Label htmlFor="startTime">Heure de début</Label>
+                    <Label htmlFor="startTime" className="flex items-center">
+                      <Clock className="mr-2 h-4 w-4" />
+                      Heure de début
+                    </Label>
                     <Input
                       id="startTime"
                       type="time"
@@ -210,7 +267,10 @@ const RoomReservation = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="endTime">Heure de fin</Label>
+                    <Label htmlFor="endTime" className="flex items-center">
+                      <Clock className="mr-2 h-4 w-4" />
+                      Heure de fin
+                    </Label>
                     <Input
                       id="endTime"
                       type="time"
@@ -223,7 +283,10 @@ const RoomReservation = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="class">Classe</Label>
+                  <Label htmlFor="class" className="flex items-center">
+                    <Users className="mr-2 h-4 w-4" />
+                    Classe
+                  </Label>
                   <Select
                     value={selectedClass}
                     onValueChange={setSelectedClass}
@@ -245,7 +308,10 @@ const RoomReservation = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="room">Salle</Label>
+                  <Label htmlFor="room" className="flex items-center">
+                    <Building className="mr-2 h-4 w-4" />
+                    Salle disponible
+                  </Label>
                   <Select
                     value={selectedRoom}
                     onValueChange={setSelectedRoom}
@@ -254,11 +320,20 @@ const RoomReservation = () => {
                       <SelectValue placeholder="Sélectionner une salle" />
                     </SelectTrigger>
                     <SelectContent>
-                      {rooms.map((room) => (
-                        <SelectItem key={room.id} value={room.id}>
-                          {room.name} (Capacité: {room.capacity})
+                      {rooms.length === 0 ? (
+                        <SelectItem value="none" disabled>
+                          Aucune salle disponible
                         </SelectItem>
-                      ))}
+                      ) : (
+                        rooms.map((room) => (
+                          <SelectItem key={room.id} value={room.id}>
+                            <div className="flex items-center">
+                              {getRoomTypeIcon(room.type)}
+                              {room.name} (Capacité: {room.capacity})
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   {errors.room && <p className="text-sm text-red-500 mt-1">{errors.room}</p>}
@@ -290,7 +365,7 @@ const RoomReservation = () => {
                 <Button type="button" variant="outline" onClick={() => navigate('/dashboard')}>
                   Annuler
                 </Button>
-                <Button type="submit" disabled={submitting}>
+                <Button type="submit" disabled={submitting || loading}>
                   {submitting ? 'Soumission en cours...' : 'Soumettre la demande'}
                 </Button>
               </div>

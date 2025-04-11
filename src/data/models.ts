@@ -1,15 +1,20 @@
 
 export type RequestStatus = 'pending' | 'admin_approved' | 'approved' | 'rejected';
 export type RequestType = 'room' | 'equipment' | 'printing';
+export type RoomType = 'computer_lab' | 'science_lab' | 'classroom' | 'meeting_room';
 
 export interface Room {
   id: string;
   name: string;
   capacity: number;
   available: boolean;
+  type: RoomType;
   software?: string[];
   equipment?: string[];
   department?: string;
+  description?: string;
+  floor?: string;
+  building?: string;
 }
 
 export interface Class {
