@@ -18,14 +18,30 @@ interface UserManagementTableProps {
 }
 
 // Define the form validation schema
-const userFormSchema = z.object({
-  name: z.string().min(2, { message: 'Le nom doit contenir au moins 2 caractères' }),
-  email: z.string().email({ message: 'Email invalide' }),
-  password: z.string().min(6, { message: 'Le mot de passe doit contenir au moins 6 caractères' }),
-  department: z.string().optional(),
-});
+const createUserFormSchema = (userRole: UserRole) => {
+  // Base schema for all user types
+  const baseSchema = {
+    name: z.string().min(2, { message: 'Le nom doit contenir au moins 2 caractères' }),
+    email: z.string().email({ message: 'Email invalide' }),
+    password: z.string().min(6, { message: 'Le mot de passe doit contenir au moins 6 caractères' }),
+  };
 
-type UserFormValues = z.infer<typeof userFormSchema>;
+  // Add department field as required for teachers
+  if (userRole === 'teacher') {
+    return z.object({
+      ...baseSchema,
+      department: z.string().min(1, { message: 'Le département est obligatoire' }),
+    });
+  }
+
+  // For admins and supervisors, department is optional
+  return z.object({
+    ...baseSchema,
+    department: z.string().optional(),
+  });
+};
+
+type UserFormValues = z.infer<ReturnType<typeof createUserFormSchema>>;
 
 const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
   const { getUsers, addUser, updateUser, deleteUser, currentUser } = useAuth();
@@ -37,9 +53,12 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
   // Get users based on role
   const users = getUsers(userRole);
 
+  // Create form validation schema based on user role
+  const formSchema = createUserFormSchema(userRole);
+
   // Forms
   const addForm = useForm<UserFormValues>({
-    resolver: zodResolver(userFormSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       email: '',
@@ -49,7 +68,7 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
   });
 
   const editForm = useForm<UserFormValues>({
-    resolver: zodResolver(userFormSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       email: '',
@@ -62,7 +81,10 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
   const handleAddUser = (data: UserFormValues) => {
     try {
       addUser({
-        ...data,
+        name: data.name,           // Now required in all cases
+        email: data.email,         // Now required in all cases
+        password: data.password,   // Now required in all cases
+        department: data.department, // Required for teachers, optional for others
         role: userRole,
       });
       
@@ -87,7 +109,10 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
     try {
       if (selectedUser) {
         updateUser(selectedUser.id, {
-          ...data,
+          name: data.name,
+          email: data.email,
+          password: data.password || undefined, // Only update if provided
+          department: data.department,
           role: userRole,
         });
         
@@ -264,32 +289,30 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
                   </FormItem>
                 )}
               />
-              {userRole === 'teacher' && (
-                <FormField
-                  control={addForm.control}
-                  name="department"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Département</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner un département" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Informatique">Informatique</SelectItem>
-                          <SelectItem value="Sciences">Sciences</SelectItem>
-                          <SelectItem value="Mathématiques">Mathématiques</SelectItem>
-                          <SelectItem value="Langues">Langues</SelectItem>
-                          <SelectItem value="Histoire-Géographie">Histoire-Géographie</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              <FormField
+                control={addForm.control}
+                name="department"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{userRole === 'teacher' ? 'Département *' : 'Département'}</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner un département" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Informatique">Informatique</SelectItem>
+                        <SelectItem value="Sciences">Sciences</SelectItem>
+                        <SelectItem value="Mathématiques">Mathématiques</SelectItem>
+                        <SelectItem value="Langues">Langues</SelectItem>
+                        <SelectItem value="Histoire-Géographie">Histoire-Géographie</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <DialogFooter>
                 <Button type="submit">Ajouter</Button>
               </DialogFooter>
@@ -347,32 +370,30 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
                   </FormItem>
                 )}
               />
-              {userRole === 'teacher' && (
-                <FormField
-                  control={editForm.control}
-                  name="department"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Département</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner un département" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Informatique">Informatique</SelectItem>
-                          <SelectItem value="Sciences">Sciences</SelectItem>
-                          <SelectItem value="Mathématiques">Mathématiques</SelectItem>
-                          <SelectItem value="Langues">Langues</SelectItem>
-                          <SelectItem value="Histoire-Géographie">Histoire-Géographie</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              <FormField
+                control={editForm.control}
+                name="department"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{userRole === 'teacher' ? 'Département *' : 'Département'}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner un département" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Informatique">Informatique</SelectItem>
+                        <SelectItem value="Sciences">Sciences</SelectItem>
+                        <SelectItem value="Mathématiques">Mathématiques</SelectItem>
+                        <SelectItem value="Langues">Langues</SelectItem>
+                        <SelectItem value="Histoire-Géographie">Histoire-Géographie</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <DialogFooter>
                 <Button type="submit">Enregistrer</Button>
               </DialogFooter>
