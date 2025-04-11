@@ -52,6 +52,11 @@ export interface Request {
   date: string;
   notes?: string;
   signature?: string;
+  documentName?: string;
+  pageCount?: number;
+  colorPrint?: boolean;
+  doubleSided?: boolean;
+  copies?: number;
   adminApproval?: {
     userId: string;
     userName: string;

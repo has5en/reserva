@@ -8,7 +8,8 @@ import {
   LogOut, 
   Package, 
   Settings, 
-  User 
+  User,
+  Printer
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -58,25 +59,39 @@ const Layout = ({ children, title }: LayoutProps) => {
                 </Link>
               </li>
               
-              <li>
-                <Link 
-                  to="/room-reservation" 
-                  className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
-                >
-                  <Building2 className="mr-2 h-5 w-5" />
-                  <span>Réserver une salle</span>
-                </Link>
-              </li>
-              
-              <li>
-                <Link 
-                  to="/equipment-request" 
-                  className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
-                >
-                  <Package className="mr-2 h-5 w-5" />
-                  <span>Demander du matériel</span>
-                </Link>
-              </li>
+              {hasRole('teacher') && (
+                <>
+                  <li>
+                    <Link 
+                      to="/room-reservation" 
+                      className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
+                    >
+                      <Building2 className="mr-2 h-5 w-5" />
+                      <span>Réserver une salle</span>
+                    </Link>
+                  </li>
+                  
+                  <li>
+                    <Link 
+                      to="/equipment-request" 
+                      className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
+                    >
+                      <Package className="mr-2 h-5 w-5" />
+                      <span>Demander du matériel</span>
+                    </Link>
+                  </li>
+                  
+                  <li>
+                    <Link 
+                      to="/printing-request" 
+                      className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
+                    >
+                      <Printer className="mr-2 h-5 w-5" />
+                      <span>Demande d'impression</span>
+                    </Link>
+                  </li>
+                </>
+              )}
               
               {hasRole('admin') && (
                 <>

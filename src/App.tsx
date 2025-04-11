@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import RoomReservation from "./pages/RoomReservation";
 import EquipmentRequest from "./pages/EquipmentRequest";
+import PrintingRequest from "./pages/PrintingRequest";
 import RequestDetails from "./pages/RequestDetails";
 import AdminDashboard from "./pages/AdminDashboard";
 import SupervisorDashboard from "./pages/SupervisorDashboard";
@@ -35,13 +36,18 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/room-reservation" element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="teacher">
                 <RoomReservation />
               </ProtectedRoute>
             } />
             <Route path="/equipment-request" element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="teacher">
                 <EquipmentRequest />
+              </ProtectedRoute>
+            } />
+            <Route path="/printing-request" element={
+              <ProtectedRoute requiredRole="teacher">
+                <PrintingRequest />
               </ProtectedRoute>
             } />
             <Route path="/request/:id" element={
