@@ -37,7 +37,8 @@ import {
   Building2,
   Package,
   AlertTriangle,
-  Info
+  Info,
+  Printer
 } from 'lucide-react';
 
 const getStatusBadge = (status: string) => {

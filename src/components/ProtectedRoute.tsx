@@ -1,38 +1,31 @@
 
-import { Navigate } from 'react-router-dom';
-import { useAuth, UserRole } from '@/contexts/AuthContext';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
-  requiredRole?: UserRole;
+  allowedRoles?: string | string[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requiredRole 
-}) => {
-  const { isAuthenticated, hasRole, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-          <p className="text-muted-foreground">Chargement...</p>
-        </div>
-      </div>
-    );
+const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
+  const { currentUser, hasRole } = useAuth();
+  
+  if (!currentUser) {
+    return <Navigate to="/login" />;
   }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  
+  if (allowedRoles) {
+    // Handle both string and array formats
+    const roles = Array.isArray(allowedRoles) ? allowedRoles : allowedRoles.split(',');
+    
+    // Check if user has any of the allowed roles
+    const hasAllowedRole = roles.some(role => hasRole(role.trim()));
+    
+    if (!hasAllowedRole) {
+      return <Navigate to="/dashboard" />;
+    }
   }
-
-  if (requiredRole && !hasRole(requiredRole)) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return <>{children}</>;
+  
+  return <Outlet />;
 };
 
 export default ProtectedRoute;
