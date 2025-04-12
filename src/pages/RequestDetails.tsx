@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,6 +21,7 @@ import { Request, Room, Equipment } from '@/data/models';
 import { 
   getRequestById, 
   updateRequestStatus, 
+  returnEquipment,
   formatDate, 
   formatDateTime,
   getRoomById,
@@ -38,7 +38,8 @@ import {
   Package,
   AlertTriangle,
   Info,
-  Printer
+  Printer,
+  RotateCcw
 } from 'lucide-react';
 
 const getStatusBadge = (status: string) => {
@@ -51,6 +52,8 @@ const getStatusBadge = (status: string) => {
       return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">Approuvé</Badge>;
     case 'rejected':
       return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">Rejeté</Badge>;
+    case 'returned':
+      return <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300">Matériel retourné</Badge>;
     default:
       return <Badge variant="outline">Inconnu</Badge>;
   }
@@ -66,6 +69,8 @@ const getStatusIcon = (status: string) => {
       return <CheckCircle2 className="h-5 w-5 text-green-600" />;
     case 'rejected':
       return <XCircle className="h-5 w-5 text-red-600" />;
+    case 'returned':
+      return <RotateCcw className="h-5 w-5 text-purple-600" />;
     default:
       return <AlertCircle className="h-5 w-5" />;
   }
@@ -80,6 +85,7 @@ const RequestDetails = () => {
   const [loading, setLoading] = useState(true);
   const [approvalNotes, setApprovalNotes] = useState('');
   const [processingAction, setProcessingAction] = useState(false);
+  const [processingReturn, setProcessingReturn] = useState(false);
   const [resource, setResource] = useState<Room | Equipment | null>(null);
   const [loadingResource, setLoadingResource] = useState(false);
   const [suggestions, setSuggestions] = useState<string>('');
@@ -95,7 +101,6 @@ const RequestDetails = () => {
         if (requestData) {
           setRequest(requestData);
           
-          // Fetch associated resource
           setLoadingResource(true);
           try {
             if (requestData.type === 'room' && requestData.roomId) {
@@ -153,6 +158,18 @@ const RequestDetails = () => {
         title: 'Demande approuvée',
         description: 'La demande a été approuvée avec succès. Une notification a été envoyée à l\'enseignant.',
       });
+
+      if (newStatus === 'approved' && request.type === 'equipment' && request.equipmentId) {
+        setLoadingResource(true);
+        try {
+          const equipmentData = await getEquipmentById(request.equipmentId);
+          setResource(equipmentData);
+        } catch (error) {
+          console.error('Failed to refresh equipment data:', error);
+        } finally {
+          setLoadingResource(false);
+        }
+      }
     } catch (error) {
       console.error('Failed to approve request:', error);
       toast({
@@ -209,6 +226,56 @@ const RequestDetails = () => {
     }
   };
 
+  const handleReturnEquipment = async () => {
+    if (!currentUser || !request) return;
+    
+    if (request.type !== 'equipment' || request.status !== 'approved') {
+      toast({
+        variant: 'destructive',
+        title: 'Action impossible',
+        description: 'Seul le matériel approuvé peut être retourné.',
+      });
+      return;
+    }
+    
+    setProcessingReturn(true);
+    try {
+      const updatedRequest = await returnEquipment(
+        request.id,
+        currentUser.id,
+        currentUser.name
+      );
+      
+      setRequest(updatedRequest);
+      
+      if (request.equipmentId) {
+        setLoadingResource(true);
+        try {
+          const equipmentData = await getEquipmentById(request.equipmentId);
+          setResource(equipmentData);
+        } catch (error) {
+          console.error('Failed to refresh equipment data:', error);
+        } finally {
+          setLoadingResource(false);
+        }
+      }
+      
+      toast({
+        title: 'Matériel retourné',
+        description: 'Le retour du matériel a été enregistré avec succès.',
+      });
+    } catch (error) {
+      console.error('Failed to process equipment return:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Impossible d\'enregistrer le retour du matériel. Veuillez réessayer.',
+      });
+    } finally {
+      setProcessingReturn(false);
+    }
+  };
+
   const canApproveAsAdmin = () => {
     return hasRole('admin') && 
            request?.status === 'pending';
@@ -217,6 +284,12 @@ const RequestDetails = () => {
   const canApproveAsSupervisor = () => {
     return hasRole('supervisor') && 
            request?.status === 'admin_approved';
+  };
+
+  const canReturnEquipment = () => {
+    return (hasRole('admin') || hasRole('supervisor')) && 
+           request?.type === 'equipment' &&
+           request?.status === 'approved';
   };
 
   const renderResourceStatus = () => {
@@ -468,7 +541,6 @@ const RequestDetails = () => {
                   </div>
                 </div>
                 
-                {/* Resource status section */}
                 {(hasRole('admin') || hasRole('supervisor')) && (
                   <Card className="border-dashed">
                     <CardContent className="p-4">
@@ -545,6 +617,25 @@ const RequestDetails = () => {
                     )}
                   </div>
                 </div>
+                
+                {request.status === 'returned' && request.returnInfo && (
+                  <>
+                    <Separator />
+                    
+                    <div className="flex items-center space-x-2">
+                      <div className="h-4 w-4 rounded-full bg-purple-500"></div>
+                      <div>
+                        <p className="font-medium">Matériel retourné</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatDateTime(request.returnInfo.timestamp)} par {request.returnInfo.userName}
+                        </p>
+                        {request.returnInfo.notes && (
+                          <p className="text-sm italic mt-1">{request.returnInfo.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
             
@@ -607,6 +698,35 @@ const RequestDetails = () => {
                   >
                     <CheckCircle2 className="h-4 w-4 mr-2" />
                     Approuver
+                  </Button>
+                </CardFooter>
+              </Card>
+            )}
+            
+            {canReturnEquipment() && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle>Retour de matériel</CardTitle>
+                  <CardDescription>
+                    Enregistrez le retour du matériel pour le remettre en disponibilité
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Alert className="mb-4 bg-blue-50 border-blue-200">
+                    <Info className="h-4 w-4 text-blue-500" />
+                    <AlertDescription className="text-blue-700">
+                      En confirmant le retour, {request?.equipmentQuantity} unité(s) de {request?.equipmentName} seront ajoutées à l'inventaire.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="w-full"
+                    onClick={handleReturnEquipment}
+                    disabled={processingReturn}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    {processingReturn ? 'Traitement en cours...' : 'Confirmer le retour'}
                   </Button>
                 </CardFooter>
               </Card>

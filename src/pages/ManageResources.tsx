@@ -4,7 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import Layout from '@/components/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RoomManagementTable, EquipmentManagementTable } from '@/components/ResourceManagementTables';
+import { 
+  RoomManagementTable, 
+  EquipmentManagementTable 
+} from '@/components/ResourceManagementTables';
+import { ResourceUpdatesTable } from '@/components/ResourceUpdatesTable';
 import { Room, Equipment } from '@/data/models';
 import { 
   getRooms, 
@@ -14,15 +18,17 @@ import {
   deleteRoom,
   updateEquipment,
   addEquipment,
-  deleteEquipment
+  deleteEquipment,
+  getResourceUpdates
 } from '@/services/dataService';
-import { Building2, Package } from 'lucide-react';
+import { Building2, Package, History } from 'lucide-react';
 
 const ManageResources = () => {
   const { currentUser } = useAuth();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('rooms');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -128,7 +134,7 @@ const ManageResources = () => {
 
   return (
     <Layout title="Gestion des ressources">
-      <Tabs defaultValue="rooms" className="max-w-5xl mx-auto">
+      <Tabs defaultValue="rooms" className="max-w-5xl mx-auto" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="rooms" className="flex items-center">
             <Building2 className="mr-2 h-4 w-4" />
@@ -137,6 +143,10 @@ const ManageResources = () => {
           <TabsTrigger value="equipment" className="flex items-center">
             <Package className="mr-2 h-4 w-4" />
             Matériel
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center">
+            <History className="mr-2 h-4 w-4" />
+            Historique
           </TabsTrigger>
         </TabsList>
         
@@ -156,6 +166,10 @@ const ManageResources = () => {
             onAddEquipment={handleAddEquipment}
             onDeleteEquipment={handleDeleteEquipment}
           />
+        </TabsContent>
+        
+        <TabsContent value="history">
+          <ResourceUpdatesTable />
         </TabsContent>
       </Tabs>
     </Layout>

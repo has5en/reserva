@@ -1,5 +1,5 @@
 
-export type RequestStatus = 'pending' | 'admin_approved' | 'approved' | 'rejected';
+export type RequestStatus = 'pending' | 'admin_approved' | 'approved' | 'rejected' | 'returned';
 export type RequestType = 'room' | 'equipment' | 'printing';
 export type RoomType = 'computer_lab' | 'science_lab' | 'classroom' | 'meeting_room';
 
@@ -65,6 +65,12 @@ export interface Request {
     notes?: string;
   };
   supervisorApproval?: {
+    userId: string;
+    userName: string;
+    timestamp: string;
+    notes?: string;
+  };
+  returnInfo?: {
     userId: string;
     userName: string;
     timestamp: string;
