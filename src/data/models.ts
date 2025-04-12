@@ -57,6 +57,7 @@ export interface Request {
   colorPrint?: boolean;
   doubleSided?: boolean;
   copies?: number;
+  pdfFileName?: string;
   adminApproval?: {
     userId: string;
     userName: string;
@@ -69,4 +70,28 @@ export interface Request {
     timestamp: string;
     notes?: string;
   };
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  read: boolean;
+  type: 'info' | 'success' | 'warning' | 'error';
+  timestamp: string;
+  relatedRequestId?: string;
+}
+
+export interface ResourceUpdate {
+  id: string;
+  resourceType: 'room' | 'equipment';
+  resourceId: string;
+  resourceName: string;
+  updaterId: string;
+  updaterName: string;
+  timestamp: string;
+  details: string;
+  previousState: Record<string, any>;
+  newState: Record<string, any>;
 }

@@ -17,14 +17,28 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Request } from '@/data/models';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Request, Room, Equipment } from '@/data/models';
 import { 
   getRequestById, 
   updateRequestStatus, 
   formatDate, 
-  formatDateTime 
+  formatDateTime,
+  getRoomById,
+  getEquipmentById
 } from '@/services/dataService';
-import { AlertCircle, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { 
+  AlertCircle, 
+  CheckCircle2, 
+  Clock, 
+  XCircle, 
+  File, 
+  Send,
+  Building2,
+  Package,
+  AlertTriangle,
+  Info
+} from 'lucide-react';
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -65,6 +79,10 @@ const RequestDetails = () => {
   const [loading, setLoading] = useState(true);
   const [approvalNotes, setApprovalNotes] = useState('');
   const [processingAction, setProcessingAction] = useState(false);
+  const [resource, setResource] = useState<Room | Equipment | null>(null);
+  const [loadingResource, setLoadingResource] = useState(false);
+  const [suggestions, setSuggestions] = useState<string>('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
     const fetchRequest = async () => {
@@ -75,6 +93,22 @@ const RequestDetails = () => {
         const requestData = await getRequestById(id);
         if (requestData) {
           setRequest(requestData);
+          
+          // Fetch associated resource
+          setLoadingResource(true);
+          try {
+            if (requestData.type === 'room' && requestData.roomId) {
+              const roomData = await getRoomById(requestData.roomId);
+              setResource(roomData);
+            } else if (requestData.type === 'equipment' && requestData.equipmentId) {
+              const equipmentData = await getEquipmentById(requestData.equipmentId);
+              setResource(equipmentData);
+            }
+          } catch (error) {
+            console.error('Failed to fetch resource:', error);
+          } finally {
+            setLoadingResource(false);
+          }
         } else {
           toast({
             variant: 'destructive',
@@ -116,7 +150,7 @@ const RequestDetails = () => {
       
       toast({
         title: 'Demande approuvée',
-        description: 'La demande a été approuvée avec succès.',
+        description: 'La demande a été approuvée avec succès. Une notification a été envoyée à l\'enseignant.',
       });
     } catch (error) {
       console.error('Failed to approve request:', error);
@@ -144,19 +178,23 @@ const RequestDetails = () => {
     
     setProcessingAction(true);
     try {
+      const rejectionNotes = suggestions 
+        ? `${approvalNotes}\n\nSuggestions alternatives: ${suggestions}`
+        : approvalNotes;
+      
       const updatedRequest = await updateRequestStatus(
         request.id,
         'rejected',
         currentUser.id,
         currentUser.name,
-        approvalNotes
+        rejectionNotes
       );
       
       setRequest(updatedRequest);
       
       toast({
         title: 'Demande rejetée',
-        description: 'La demande a été rejetée.',
+        description: 'La demande a été rejetée. Une notification et un email ont été envoyés à l\'enseignant avec les explications.',
       });
     } catch (error) {
       console.error('Failed to reject request:', error);
@@ -178,6 +216,142 @@ const RequestDetails = () => {
   const canApproveAsSupervisor = () => {
     return hasRole('supervisor') && 
            request?.status === 'admin_approved';
+  };
+
+  const renderResourceStatus = () => {
+    if (loadingResource) {
+      return <p>Chargement des détails de la ressource...</p>;
+    }
+    
+    if (!resource) {
+      return <p>Informations sur la ressource non disponibles</p>;
+    }
+    
+    if (request?.type === 'room') {
+      const room = resource as Room;
+      return (
+        <div className="space-y-3">
+          <h3 className="font-semibold flex items-center">
+            <Building2 className="mr-2 h-4 w-4" />
+            État de la salle
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="p-3 rounded-md bg-accent">
+              <span className="text-sm font-medium">Disponibilité:</span>
+              <div className="mt-1 flex items-center">
+                {room.available ? (
+                  <Badge variant="outline" className="bg-green-100 text-green-800">Disponible</Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-red-100 text-red-800">Non disponible</Badge>
+                )}
+              </div>
+            </div>
+            
+            <div className="p-3 rounded-md bg-accent">
+              <span className="text-sm font-medium">Capacité:</span>
+              <p className="mt-1">{room.capacity} personnes</p>
+            </div>
+            
+            <div className="p-3 rounded-md bg-accent md:col-span-2">
+              <span className="text-sm font-medium">Type:</span>
+              <p className="mt-1">{room.type}</p>
+            </div>
+            
+            {room.equipment && room.equipment.length > 0 && (
+              <div className="p-3 rounded-md bg-accent md:col-span-2">
+                <span className="text-sm font-medium">Équipement disponible:</span>
+                <ul className="mt-1 list-disc list-inside">
+                  {room.equipment.map((eq, index) => (
+                    <li key={index}>{eq}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {!room.available && (
+              <Alert className="md:col-span-2 bg-amber-50 border-amber-200">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                <AlertDescription className="text-amber-700">
+                  Attention: Cette salle n'est pas disponible actuellement.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        </div>
+      );
+    } else if (request?.type === 'equipment') {
+      const equipment = resource as Equipment;
+      return (
+        <div className="space-y-3">
+          <h3 className="font-semibold flex items-center">
+            <Package className="mr-2 h-4 w-4" />
+            État du matériel
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="p-3 rounded-md bg-accent">
+              <span className="text-sm font-medium">Catégorie:</span>
+              <p className="mt-1">{equipment.category}</p>
+            </div>
+            
+            <div className="p-3 rounded-md bg-accent">
+              <span className="text-sm font-medium">Disponible:</span>
+              <p className="mt-1">{equipment.available} unités</p>
+            </div>
+            
+            {request && request.equipmentQuantity && equipment.available < request.equipmentQuantity && (
+              <Alert className="md:col-span-2 bg-amber-50 border-amber-200">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                <AlertDescription className="text-amber-700">
+                  Attention: La quantité demandée ({request.equipmentQuantity}) est supérieure à la quantité disponible ({equipment.available}).
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        </div>
+      );
+    } else if (request?.type === 'printing') {
+      return (
+        <div className="space-y-3">
+          <h3 className="font-semibold flex items-center">
+            <Printer className="mr-2 h-4 w-4" />
+            Détails de l'impression
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="p-3 rounded-md bg-accent">
+              <span className="text-sm font-medium">Pages:</span>
+              <p className="mt-1">{request.pageCount} pages × {request.copies} copies = {(request.pageCount || 0) * (request.copies || 0)} pages au total</p>
+            </div>
+            
+            <div className="p-3 rounded-md bg-accent">
+              <span className="text-sm font-medium">Type d'impression:</span>
+              <div className="mt-1 flex flex-wrap gap-2">
+                <Badge variant="outline" className={request.colorPrint ? "bg-green-100 text-green-800" : "bg-gray-100"}>
+                  {request.colorPrint ? "Couleur" : "Noir et blanc"}
+                </Badge>
+                <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                  {request.doubleSided ? "Recto-verso" : "Recto seulement"}
+                </Badge>
+              </div>
+            </div>
+            
+            {request.pdfFileName && (
+              <div className="p-3 rounded-md bg-accent md:col-span-2">
+                <span className="text-sm font-medium">Fichier:</span>
+                <div className="mt-1 flex items-center">
+                  <File className="h-4 w-4 mr-2" />
+                  <span>{request.pdfFileName}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
   };
 
   if (loading) {
@@ -207,7 +381,11 @@ const RequestDetails = () => {
           <div className="flex items-center space-x-2">
             {getStatusIcon(request.status)}
             <h2 className="text-xl font-semibold">
-              {request.type === 'room' ? `Réservation: ${request.roomName}` : `Matériel: ${request.equipmentName}`}
+              {request.type === 'room' 
+                ? `Réservation: ${request.roomName}` 
+                : request.type === 'equipment' 
+                  ? `Matériel: ${request.equipmentName}` 
+                  : `Impression: ${request.documentName}`}
             </h2>
             <div>{getStatusBadge(request.status)}</div>
           </div>
@@ -228,7 +406,11 @@ const RequestDetails = () => {
                   <div>
                     <Label className="text-sm text-muted-foreground">Type de demande</Label>
                     <p className="font-medium">
-                      {request.type === 'room' ? 'Réservation de salle' : 'Demande de matériel'}
+                      {request.type === 'room' 
+                        ? 'Réservation de salle' 
+                        : request.type === 'equipment' 
+                          ? 'Demande de matériel' 
+                          : 'Demande d\'impression'}
                     </p>
                   </div>
                   
@@ -284,6 +466,15 @@ const RequestDetails = () => {
                     />
                   </div>
                 </div>
+                
+                {/* Resource status section */}
+                {(hasRole('admin') || hasRole('supervisor')) && (
+                  <Card className="border-dashed">
+                    <CardContent className="p-4">
+                      {renderResourceStatus()}
+                    </CardContent>
+                  </Card>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -372,6 +563,31 @@ const RequestDetails = () => {
                       rows={3}
                     />
                   </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setShowSuggestions(!showSuggestions)}
+                    >
+                      {showSuggestions ? 'Masquer les suggestions' : 'Ajouter des suggestions'}
+                    </Button>
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  
+                  {showSuggestions && (
+                    <div>
+                      <Label htmlFor="suggestions">Suggestions alternatives</Label>
+                      <Textarea
+                        id="suggestions"
+                        placeholder="Proposer des alternatives (autre salle, autre date, autre matériel)..."
+                        value={suggestions}
+                        onChange={(e) => setSuggestions(e.target.value)}
+                        rows={2}
+                      />
+                    </div>
+                  )}
                 </CardContent>
                 <CardFooter className="flex justify-between">
                   <Button 
@@ -380,6 +596,7 @@ const RequestDetails = () => {
                     onClick={handleReject}
                     disabled={processingAction}
                   >
+                    <XCircle className="h-4 w-4 mr-2" />
                     Rejeter
                   </Button>
                   <Button 
@@ -387,6 +604,7 @@ const RequestDetails = () => {
                     onClick={handleApprove}
                     disabled={processingAction}
                   >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
                     Approuver
                   </Button>
                 </CardFooter>

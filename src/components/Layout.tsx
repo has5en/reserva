@@ -1,6 +1,8 @@
 
 import { ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/components/NotificationsProvider';
+import NotificationsDropdown from '@/components/NotificationsDropdown';
 import { 
   Building2, 
   Calendar, 
@@ -11,7 +13,8 @@ import {
   User,
   Printer,
   BarChart2,
-  Users
+  Users,
+  Warehouse
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -25,6 +28,12 @@ interface LayoutProps {
 
 const Layout = ({ children, title }: LayoutProps) => {
   const { currentUser, logout, hasRole } = useAuth();
+  const { 
+    notifications, 
+    markAsRead, 
+    markAllAsRead, 
+    clearAll 
+  } = useNotifications();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -39,6 +48,8 @@ const Layout = ({ children, title }: LayoutProps) => {
       .join('')
       .toUpperCase();
   };
+
+  const isTeacherOnly = hasRole('teacher') && !hasRole('admin') && !hasRole('supervisor');
 
   return (
     <div className="flex h-full">
@@ -61,7 +72,7 @@ const Layout = ({ children, title }: LayoutProps) => {
                 </Link>
               </li>
               
-              {hasRole('teacher') && (
+              {isTeacherOnly && (
                 <>
                   <li>
                     <Link 
@@ -130,7 +141,7 @@ const Layout = ({ children, title }: LayoutProps) => {
                       to="/manage-resources" 
                       className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
                     >
-                      <Settings className="mr-2 h-5 w-5" />
+                      <Warehouse className="mr-2 h-5 w-5" />
                       <span>Gestion des ressources</span>
                     </Link>
                   </li>
@@ -164,6 +175,15 @@ const Layout = ({ children, title }: LayoutProps) => {
                     >
                       <BarChart2 className="mr-2 h-5 w-5" />
                       <span>Statistiques</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      to="/manage-resources" 
+                      className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
+                    >
+                      <Warehouse className="mr-2 h-5 w-5" />
+                      <span>Gestion des ressources</span>
                     </Link>
                   </li>
                   <li>
@@ -204,8 +224,16 @@ const Layout = ({ children, title }: LayoutProps) => {
 
       {/* Main content */}
       <div className="flex-1 overflow-auto">
-        <header className="bg-white shadow p-4">
+        <header className="bg-white shadow p-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold">{title}</h1>
+          <div className="flex items-center">
+            <NotificationsDropdown
+              notifications={notifications}
+              onMarkAsRead={markAsRead}
+              onMarkAllAsRead={markAllAsRead}
+              onClearAll={clearAll}
+            />
+          </div>
         </header>
         <main className="p-6">
           {children}

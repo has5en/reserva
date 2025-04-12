@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
@@ -14,11 +14,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Class } from '@/data/models';
 import { getClasses, createRequest } from '@/services/dataService';
-import { Printer, Copy, FileText, Files, Palette } from 'lucide-react';
+import { Printer, Copy, FileText, Files, Palette, Upload, File, FileUp } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const PrintingRequest = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,6 +36,7 @@ const PrintingRequest = () => {
   const [signature, setSignature] = useState<string | null>(null);
   const [colorPrint, setColorPrint] = useState(false);
   const [doubleSided, setDoubleSided] = useState(true);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
 
   // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -74,6 +77,7 @@ const PrintingRequest = () => {
     if (!selectedClass) newErrors.class = 'Veuillez sélectionner une classe';
     if (!date) newErrors.date = 'Veuillez sélectionner une date';
     if (!signature) newErrors.signature = 'Veuillez signer la demande';
+    if (!pdfFile) newErrors.pdfFile = 'Veuillez importer un fichier PDF';
     
     // Check if date is not in the past
     const selectedDate = new Date(date);
@@ -86,6 +90,39 @@ const PrintingRequest = () => {
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type !== 'application/pdf') {
+        setErrors(prev => ({
+          ...prev,
+          pdfFile: 'Seuls les fichiers PDF sont acceptés'
+        }));
+        return;
+      }
+      
+      setPdfFile(file);
+      // Auto-detect document name from file name if not already set
+      if (!documentName) {
+        const fileName = file.name.replace('.pdf', '');
+        setDocumentName(fileName);
+      }
+      
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.pdfFile;
+        return newErrors;
+      });
+    }
+  };
+
+  const triggerFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,6 +141,10 @@ const PrintingRequest = () => {
         throw new Error('Invalid class selection');
       }
       
+      // In a real application, we would upload the PDF file to a storage service here
+      // For this demo, we'll just use the file name
+      const pdfFileName = pdfFile ? pdfFile.name : '';
+      
       await createRequest({
         type: 'printing',
         status: 'pending',
@@ -118,7 +159,8 @@ const PrintingRequest = () => {
         pageCount,
         copies,
         colorPrint,
-        doubleSided
+        doubleSided,
+        pdfFileName
       });
       
       toast({
@@ -163,6 +205,44 @@ const PrintingRequest = () => {
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
+                {/* PDF File Upload */}
+                <div>
+                  <Label htmlFor="pdfFile" className="flex items-center gap-2">
+                    <FileUp className="h-4 w-4" />
+                    Document PDF à imprimer
+                  </Label>
+                  <div className="mt-2">
+                    <input
+                      type="file"
+                      id="pdfFile"
+                      ref={fileInputRef}
+                      accept="application/pdf"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={triggerFileInput}
+                        className="w-full"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {pdfFile ? 'Changer de fichier' : 'Importer un fichier PDF'}
+                      </Button>
+                    </div>
+                    {pdfFile && (
+                      <Alert className="mt-2 bg-green-50 border-green-200">
+                        <File className="h-4 w-4 mr-2 text-green-500" />
+                        <AlertDescription className="text-green-700">
+                          {pdfFile.name} ({Math.round(pdfFile.size / 1024)} Ko)
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    {errors.pdfFile && <p className="text-sm text-red-500 mt-1">{errors.pdfFile}</p>}
+                  </div>
+                </div>
+
                 <div>
                   <Label htmlFor="documentName" className="flex items-center gap-2">
                     <FileText className="h-4 w-4" />
