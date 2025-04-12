@@ -36,66 +36,39 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/available-rooms" element={
-                <ProtectedRoute requiredRole="teacher">
-                  <AvailableRooms />
-                </ProtectedRoute>
-              } />
-              <Route path="/room-reservation" element={
-                <ProtectedRoute requiredRole="teacher">
-                  <RoomReservation />
-                </ProtectedRoute>
-              } />
-              <Route path="/equipment-request" element={
-                <ProtectedRoute requiredRole="teacher">
-                  <EquipmentRequest />
-                </ProtectedRoute>
-              } />
-              <Route path="/printing-request" element={
-                <ProtectedRoute requiredRole="teacher">
-                  <PrintingRequest />
-                </ProtectedRoute>
-              } />
-              <Route path="/request/:id" element={
-                <ProtectedRoute>
-                  <RequestDetails />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin" element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin-stats" element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminStats />
-                </ProtectedRoute>
-              } />
-              <Route path="/supervisor" element={
-                <ProtectedRoute requiredRole="supervisor">
-                  <SupervisorDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/supervisor-stats" element={
-                <ProtectedRoute requiredRole="supervisor">
-                  <SupervisorStats />
-                </ProtectedRoute>
-              } />
-              <Route path="/manage-resources" element={
-                <ProtectedRoute requiredRole="admin,supervisor">
-                  <ManageResources />
-                </ProtectedRoute>
-              } />
-              <Route path="/user-management" element={
-                <ProtectedRoute requiredRole="admin,supervisor">
-                  <UserManagement />
-                </ProtectedRoute>
-              } />
+              
+              {/* Protected routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/request/:id" element={<RequestDetails />} />
+              </Route>
+              
+              {/* Teacher-specific routes */}
+              <Route element={<ProtectedRoute allowedRoles="teacher" />}>
+                <Route path="/available-rooms" element={<AvailableRooms />} />
+                <Route path="/room-reservation" element={<RoomReservation />} />
+                <Route path="/equipment-request" element={<EquipmentRequest />} />
+                <Route path="/printing-request" element={<PrintingRequest />} />
+              </Route>
+              
+              {/* Admin-specific routes */}
+              <Route element={<ProtectedRoute allowedRoles="admin" />}>
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin-stats" element={<AdminStats />} />
+              </Route>
+              
+              {/* Supervisor-specific routes */}
+              <Route element={<ProtectedRoute allowedRoles="supervisor" />}>
+                <Route path="/supervisor" element={<SupervisorDashboard />} />
+                <Route path="/supervisor-stats" element={<SupervisorStats />} />
+              </Route>
+              
+              {/* Admin and supervisor shared routes */}
+              <Route element={<ProtectedRoute allowedRoles="admin,supervisor" />}>
+                <Route path="/manage-resources" element={<ManageResources />} />
+                <Route path="/user-management" element={<UserManagement />} />
+              </Route>
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
