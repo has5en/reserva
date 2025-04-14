@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { Room, Equipment, Request, RequestStatus, Notification, ResourceUpdate } from '@/data/models';
+import { Room, Equipment, Request, RequestStatus, Notification, ResourceUpdate, Class } from '@/data/models';
 
 // Format date for display
 export const formatDate = (dateString: string): string => {
@@ -32,7 +31,6 @@ export const getRooms = async (): Promise<Room[]> => {
   
   if (error) throw error;
   
-  // Transform the data to match the Room type
   return (data || []).map(room => ({
     id: room.id,
     name: room.name,
@@ -43,8 +41,8 @@ export const getRooms = async (): Promise<Room[]> => {
     equipment: room.equipment || [],
     available: room.is_available,
     description: '',
-    created_at: room.created_at,
-    updated_at: room.updated_at
+    software: [],
+    department: ''
   }));
 };
 
@@ -479,14 +477,14 @@ export const getAvailableRoomsByType = async (type: string): Promise<Room[]> => 
   }));
 };
 
-export const getClasses = async (): Promise<{ id: string; name: string }[]> => {
-  // Mock implementation until a classes table is added
+// Mock data for classes with military academy specific fields
+export const getClasses = async (): Promise<Class[]> => {
   return [
-    { id: 'class1', name: 'Classe 1A' },
-    { id: 'class2', name: 'Classe 1B' },
-    { id: 'class3', name: 'Classe 2A' },
-    { id: 'class4', name: 'Classe 2B' },
-    { id: 'class5', name: 'Classe 3A' }
+    { id: 'class1', name: 'Promotion Alpha', studentCount: 25, department: 'Infantry', unit: '1st Battalion' },
+    { id: 'class2', name: 'Promotion Bravo', studentCount: 30, department: 'Artillery', unit: '2nd Battalion' },
+    { id: 'class3', name: 'Promotion Charlie', studentCount: 20, department: 'Engineering', unit: '3rd Battalion' },
+    { id: 'class4', name: 'Promotion Delta', studentCount: 28, department: 'Signal Corps', unit: '4th Battalion' },
+    { id: 'class5', name: 'Promotion Echo', studentCount: 22, department: 'Medical Corps', unit: '5th Battalion' }
   ];
 };
 
@@ -502,9 +500,9 @@ export const createRequest = async (request: Omit<Request, 'id' | 'createdAt' | 
     start_time: request.startTime,
     end_time: request.endTime,
     purpose: request.notes,
-    participants: isRoomRequest ? request.participants : null,
     class_id: request.classId,
-    class_name: request.className
+    class_name: request.className,
+    requires_commander_approval: request.requires_commander_approval || false
   };
   
   const { data, error } = await supabase

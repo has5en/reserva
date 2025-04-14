@@ -18,6 +18,7 @@ export type Database = {
           id: string
           location: string | null
           name: string
+          requires_clearance: boolean | null
           total_quantity: number
           updated_at: string
         }
@@ -29,6 +30,7 @@ export type Database = {
           id?: string
           location?: string | null
           name: string
+          requires_clearance?: boolean | null
           total_quantity: number
           updated_at?: string
         }
@@ -40,6 +42,7 @@ export type Database = {
           id?: string
           location?: string | null
           name?: string
+          requires_clearance?: boolean | null
           total_quantity?: number
           updated_at?: string
         }
@@ -47,36 +50,49 @@ export type Database = {
       }
       profiles: {
         Row: {
+          clearance_level: string | null
           created_at: string
           department: string | null
           full_name: string | null
           id: string
+          rank: string | null
+          unit: string | null
           updated_at: string
         }
         Insert: {
+          clearance_level?: string | null
           created_at?: string
           department?: string | null
           full_name?: string | null
           id: string
+          rank?: string | null
+          unit?: string | null
           updated_at?: string
         }
         Update: {
+          clearance_level?: string | null
           created_at?: string
           department?: string | null
           full_name?: string | null
           id?: string
+          rank?: string | null
+          unit?: string | null
           updated_at?: string
         }
         Relationships: []
       }
       reservations: {
         Row: {
+          class_id: string | null
+          class_name: string | null
           created_at: string
           end_time: string
           equipment_id: string | null
+          equipment_quantity: number | null
           id: string
           participants: number | null
           purpose: string | null
+          requires_commander_approval: boolean | null
           room_id: string | null
           start_time: string
           status: Database["public"]["Enums"]["request_status"]
@@ -84,12 +100,16 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          class_id?: string | null
+          class_name?: string | null
           created_at?: string
           end_time: string
           equipment_id?: string | null
+          equipment_quantity?: number | null
           id?: string
           participants?: number | null
           purpose?: string | null
+          requires_commander_approval?: boolean | null
           room_id?: string | null
           start_time: string
           status?: Database["public"]["Enums"]["request_status"]
@@ -97,12 +117,16 @@ export type Database = {
           user_id: string
         }
         Update: {
+          class_id?: string | null
+          class_name?: string | null
           created_at?: string
           end_time?: string
           equipment_id?: string | null
+          equipment_quantity?: number | null
           id?: string
           participants?: number | null
           purpose?: string | null
+          requires_commander_approval?: boolean | null
           room_id?: string | null
           start_time?: string
           status?: Database["public"]["Enums"]["request_status"]
@@ -170,11 +194,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      return_equipment: {
+        Args: { equipment_id: string; quantity: number }
+        Returns: undefined
+      }
     }
     Enums: {
       request_status: "pending" | "approved" | "rejected" | "cancelled"
-      room_type: "classroom" | "lab" | "meeting_room" | "conference_room"
+      room_type:
+        | "classroom"
+        | "training_room"
+        | "weapons_room"
+        | "tactical_room"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -291,7 +322,12 @@ export const Constants = {
   public: {
     Enums: {
       request_status: ["pending", "approved", "rejected", "cancelled"],
-      room_type: ["classroom", "lab", "meeting_room", "conference_room"],
+      room_type: [
+        "classroom",
+        "training_room",
+        "weapons_room",
+        "tactical_room",
+      ],
     },
   },
 } as const

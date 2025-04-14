@@ -1,7 +1,6 @@
-
 export type RequestStatus = 'pending' | 'admin_approved' | 'approved' | 'rejected' | 'returned';
 export type RequestType = 'room' | 'equipment' | 'printing';
-export type RoomType = 'computer_lab' | 'science_lab' | 'classroom' | 'meeting_room';
+export type RoomType = 'classroom' | 'training_room' | 'weapons_room' | 'tactical_room';
 
 export interface Room {
   id: string;
@@ -22,6 +21,7 @@ export interface Class {
   name: string;
   studentCount: number;
   department: string;
+  unit?: string;
 }
 
 export interface Equipment {
@@ -30,6 +30,7 @@ export interface Equipment {
   category: string;
   available: number;
   department?: string;
+  requires_clearance?: boolean;
 }
 
 export interface Request {
@@ -51,6 +52,7 @@ export interface Request {
   endTime?: string;
   date: string;
   notes?: string;
+  requires_commander_approval?: boolean;
   signature?: string;
   documentName?: string;
   pageCount?: number;
