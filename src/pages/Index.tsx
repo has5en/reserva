@@ -1,8 +1,9 @@
+
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import Calendar from '@/components/ui/calendar';
+import { Calendar } from '@/components/ui/calendar';
 
 const Index = () => {
   const { isAuthenticated } = useAuth();
