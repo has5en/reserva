@@ -53,11 +53,11 @@ const Layout = ({ children, title }: LayoutProps) => {
 
   return (
     <div className="flex h-full">
-      {/* Sidebar */}
       <div className="w-64 bg-primary h-full p-4 text-white">
         <div className="flex flex-col h-full">
-          <div className="mb-8">
-            <h1 className="text-xl font-bold">Salle Smart Reserva</h1>
+          <div className="mb-8 flex items-center space-x-2">
+            <Calendar className="h-6 w-6" />
+            <h1 className="text-xl font-bold">Reserva</h1>
           </div>
           
           <nav className="flex-1">
