@@ -1,10 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import { Room } from '@/data/models';
+import { Room, RoomType } from '@/data/models';
 import { getRooms } from '@/services/dataService';
 import { Building, Users, Presentation, Swords, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { RoomType } from '@/data/models';
 
 const AvailableRooms = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -37,7 +37,7 @@ const AvailableRooms = () => {
       'meeting_room': 'training_room'
     };
     
-    const mappedType = typeMapping[type] || 'classroom';
+    const mappedType = (typeMapping[type] || type) as RoomType;
     
     if (mappedType === 'classroom') {
       return <Users className="h-5 w-5" />;
@@ -60,7 +60,7 @@ const AvailableRooms = () => {
       'meeting_room': 'training_room'
     };
     
-    const mappedType = typeMapping[type] || 'classroom';
+    const mappedType = (typeMapping[type] || type) as RoomType;
     
     if (mappedType === 'classroom') {
       return 'bg-blue-100 text-blue-800';

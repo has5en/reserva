@@ -1,6 +1,8 @@
+
 export type RequestStatus = 'pending' | 'admin_approved' | 'approved' | 'rejected' | 'returned';
 export type RequestType = 'room' | 'equipment' | 'printing';
 export type RoomType = 'classroom' | 'training_room' | 'weapons_room' | 'tactical_room';
+export type UserRole = 'admin' | 'supervisor' | 'teacher';
 
 export interface Room {
   id: string;
@@ -20,15 +22,19 @@ export interface Department {
   id: string;
   name: string;
   description?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Class {
   id: string;
   name: string;
   studentCount: number;
-  department: string;
   departmentId: string;
+  department?: string;
   unit?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface TeacherClass {
@@ -37,6 +43,7 @@ export interface TeacherClass {
   classId: string;
   className?: string;
   departmentName?: string;
+  created_at?: string;
 }
 
 export interface Equipment {
