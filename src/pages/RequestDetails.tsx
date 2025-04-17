@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,7 +21,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Request, Room, Equipment } from '@/data/models';
 import { 
   getRequestById, 
-  updateRequestStatus, 
+  updateRequest, 
   returnEquipment,
   formatDate, 
   formatDateTime,
@@ -144,7 +145,7 @@ const RequestDetails = () => {
     setProcessingAction(true);
     try {
       const newStatus = hasRole('admin') ? 'admin_approved' : 'approved';
-      const updatedRequest = await updateRequestStatus(
+      const updatedRequest = await updateRequest(
         request.id,
         newStatus,
         currentUser.id,
@@ -200,7 +201,7 @@ const RequestDetails = () => {
         ? `${approvalNotes}\n\nSuggestions alternatives: ${suggestions}`
         : approvalNotes;
       
-      const updatedRequest = await updateRequestStatus(
+      const updatedRequest = await updateRequest(
         request.id,
         'rejected',
         currentUser.id,
@@ -240,13 +241,17 @@ const RequestDetails = () => {
     
     setProcessingReturn(true);
     try {
-      const updatedRequest = await returnEquipment(
+      await returnEquipment(
         request.id,
         currentUser.id,
         currentUser.name
       );
       
-      setRequest(updatedRequest);
+      // Fetch the updated request
+      const updatedRequest = await getRequestById(request.id);
+      if (updatedRequest) {
+        setRequest(updatedRequest);
+      }
       
       if (request.equipmentId) {
         setLoadingResource(true);

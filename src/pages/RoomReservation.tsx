@@ -1,372 +1,218 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/components/ui/use-toast';
 import Layout from '@/components/Layout';
-import SignatureCanvas from '@/components/SignatureCanvas';
-import RoomTypeSelector from '@/components/RoomTypeSelector';
+import { toast } from '@/components/ui/use-toast';
+import { getAvailableRoomsByType, getTeacherClassesForReservation } from '@/services/dataService';
+import { RoomType, Room, Class } from '@/data/models';
+import { Calendar } from '@/components/ui/calendar';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Room, Class, RoomType } from '@/data/models';
-import { getAvailableRoomsByType, getTeacherClassesForReservation, createRequest } from '@/services/dataService';
-import { Building, Calendar, Clock, Users, BookOpen, Computer, Beaker } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Building } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 const RoomReservation = () => {
-  const { currentUser } = useAuth();
   const navigate = useNavigate();
-
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  const [selectedRoom, setSelectedRoom] = useState<string>('');
-  const [selectedClass, setSelectedClass] = useState<string>('');
-  const [date, setDate] = useState<string>('');
+  const { currentUser } = useAuth();
+  const [selectedRoomType, setSelectedRoomType] = useState<RoomType>('classroom');
+  const [date, setDate] = useState<Date | undefined>(undefined);
   const [startTime, setStartTime] = useState<string>('');
   const [endTime, setEndTime] = useState<string>('');
-  const [notes, setNotes] = useState<string>('');
-  const [signature, setSignature] = useState<string | null>(null);
-  const [roomType, setRoomType] = useState<RoomType>('classroom');
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchPerformed, setSearchPerformed] = useState(false);
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+    const loadClasses = async () => {
+      if (!currentUser) return;
+      
       try {
-        const roomsData = await getAvailableRoomsByType(roomType);
-        setRooms(roomsData);
+        const userClasses = await getTeacherClassesForReservation(currentUser.id);
+        setClasses(userClasses);
         
-        if (currentUser?.id) {
-          const classesData = await getTeacherClassesForReservation(currentUser.id);
-          setClasses(classesData);
+        if (userClasses.length > 0) {
+          setSelectedClass(userClasses[0]);
         }
       } catch (error) {
-        console.error('Failed to fetch data:', error);
+        console.error('Failed to load classes:', error);
         toast({
           variant: 'destructive',
           title: 'Erreur',
-          description: 'Impossible de charger les données. Veuillez réessayer.',
+          description: 'Impossible de charger vos classes. Veuillez réessayer.',
         });
-      } finally {
-        setLoading(false);
       }
     };
-
-    fetchData();
-  }, [currentUser, roomType]);
-
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
     
-    if (!selectedRoom) newErrors.room = 'Veuillez sélectionner une salle';
-    if (!selectedClass) newErrors.class = 'Veuillez sélectionner une classe';
-    if (!date) newErrors.date = 'Veuillez sélectionner une date';
-    if (!startTime) newErrors.startTime = 'Veuillez sélectionner une heure de début';
-    if (!endTime) newErrors.endTime = 'Veuillez sélectionner une heure de fin';
-    if (!signature) newErrors.signature = 'Veuillez signer la demande';
-    
-    if (startTime && endTime && startTime >= endTime) {
-      newErrors.endTime = 'L\'heure de fin doit être après l\'heure de début';
+    loadClasses();
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (date && startTime && endTime) {
+      handleSearchRooms();
     }
-    
-    const selectedDate = new Date(date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    if (selectedDate < today) {
-      newErrors.date = 'La date ne peut pas être dans le passé';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  }, [selectedRoomType]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-    
-    setSubmitting(true);
-    
+  const handleSearchRooms = async () => {
+    if (!date || !startTime || !endTime) {
+      setShowValidationErrors(true);
+      return;
+    }
+
+    setLoading(true);
     try {
-      if (!currentUser) throw new Error('User not authenticated');
-      
-      const selectedRoomData = rooms.find(room => room.id === selectedRoom);
-      const selectedClassData = classes.find(cls => cls.id === selectedClass);
-      
-      if (!selectedRoomData || !selectedClassData) {
-        throw new Error('Invalid selection');
-      }
-      
-      await createRequest({
-        type: 'room',
-        status: 'pending',
-        userId: currentUser.id,
-        userName: currentUser.name,
-        roomId: selectedRoomData.id,
-        roomName: selectedRoomData.name,
-        classId: selectedClassData.id,
-        className: selectedClassData.name,
-        date,
-        startTime,
-        endTime,
-        notes,
-        signature: signature || '',
-      });
-      
-      toast({
-        title: 'Demande soumise',
-        description: 'Votre demande de réservation a été soumise avec succès.',
-      });
-      
-      navigate('/dashboard');
+      const rooms = await getAvailableRoomsByType(selectedRoomType, date.toISOString(), startTime, endTime);
+      setAvailableRooms(rooms);
+      setSearchPerformed(true);
     } catch (error) {
-      console.error('Failed to submit request:', error);
+      console.error('Failed to search rooms:', error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
-        description: 'Impossible de soumettre la demande. Veuillez réessayer.',
+        description: 'Impossible de rechercher des salles. Veuillez réessayer.',
       });
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
-  const getRoomTypeIcon = (type: RoomType) => {
-    switch (type) {
-      case 'classroom':
-        return <BookOpen className="mr-2 h-5 w-5" />;
-      case 'training_room':
-        return <Computer className="mr-2 h-5 w-5" />;
-      case 'weapons_room':
-        return <Beaker className="mr-2 h-5 w-5" />;
-      case 'tactical_room':
-        return <Users className="mr-2 h-5 w-5" />;
-      default:
-        return <Building className="mr-2 h-5 w-5" />;
+  const handleRoomSelection = (room: Room) => {
+    if (!date || !startTime || !endTime || !selectedClass || !currentUser) {
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Veuillez sélectionner une date, une heure de début, une heure de fin et une classe.',
+      });
+      return;
     }
-  };
 
-  const getSelectedRoomDetails = () => {
-    const room = rooms.find(r => r.id === selectedRoom);
-    if (!room) return null;
-    
-    return (
-      <div className="space-y-2 p-4 border rounded-md bg-accent">
-        <h3 className="font-semibold flex items-center">
-          {getRoomTypeIcon(room.type)}
-          Détails de la salle
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <p><span className="font-medium">Nom:</span> {room.name}</p>
-            <p><span className="font-medium">Capacité:</span> {room.capacity} personnes</p>
-            {room.building && <p><span className="font-medium">Bâtiment:</span> {room.building}</p>}
-            {room.floor && <p><span className="font-medium">Étage:</span> {room.floor}</p>}
-          </div>
-          <div>
-            {room.software && room.software.length > 0 && (
-              <p><span className="font-medium">Logiciels:</span> {room.software.join(', ')}</p>
-            )}
-            {room.equipment && room.equipment.length > 0 && (
-              <p><span className="font-medium">Équipement:</span> {room.equipment.join(', ')}</p>
-            )}
-            {room.description && (
-              <p><span className="font-medium">Description:</span> {room.description}</p>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const getSelectedClassDetails = () => {
-    const selectedClassData = classes.find(c => c.id === selectedClass);
-    if (!selectedClassData) return null;
-    
-    return (
-      <div className="space-y-2 p-4 border rounded-md bg-accent">
-        <h3 className="font-semibold flex items-center">
-          <Users className="mr-2 h-5 w-5" />
-          Détails de la classe
-        </h3>
-        <p><span className="font-medium">Effectif:</span> {selectedClassData.studentCount} étudiants</p>
-        <p><span className="font-medium">Département:</span> {selectedClassData.department}</p>
-      </div>
-    );
+    navigate('/request/new', {
+      state: {
+        type: 'room',
+        roomId: room.id,
+        roomName: room.name,
+        date: date.toISOString(),
+        startTime: startTime,
+        endTime: endTime,
+        classId: selectedClass.id,
+        className: selectedClass.name
+      },
+    });
   };
 
   return (
     <Layout title="Réservation de salle">
-      <div className="max-w-4xl mx-auto">
+      <div className="container max-w-4xl mx-auto">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Building className="mr-2 h-6 w-6" />
-              Réservation de salle ou laboratoire
-            </CardTitle>
+            <CardTitle>Rechercher une salle disponible</CardTitle>
+            <CardDescription>Sélectionnez les critères de recherche pour trouver une salle.</CardDescription>
           </CardHeader>
-          <CardContent className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-4">
-                <div>
-                  <Label>Type d'espace</Label>
-                  <RoomTypeSelector 
-                    selectedType={roomType} 
-                    onChange={(type) => setRoomType(type as RoomType)} 
-                    className="mt-2"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="col-span-1 md:col-span-1">
-                    <Label htmlFor="date" className="flex items-center">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      Date
-                    </Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      className={errors.date ? 'border-red-500' : ''}
-                    />
-                    {errors.date && <p className="text-sm text-red-500 mt-1">{errors.date}</p>}
-                  </div>
-                
-                  <div>
-                    <Label htmlFor="startTime" className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4" />
-                      Heure de début
-                    </Label>
-                    <Input
-                      id="startTime"
-                      type="time"
-                      value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
-                      className={errors.startTime ? 'border-red-500' : ''}
-                    />
-                    {errors.startTime && <p className="text-sm text-red-500 mt-1">{errors.startTime}</p>}
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="endTime" className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4" />
-                      Heure de fin
-                    </Label>
-                    <Input
-                      id="endTime"
-                      type="time"
-                      value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                      className={errors.endTime ? 'border-red-500' : ''}
-                    />
-                    {errors.endTime && <p className="text-sm text-red-500 mt-1">{errors.endTime}</p>}
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="class" className="flex items-center">
-                    <Users className="mr-2 h-4 w-4" />
-                    Classe
-                  </Label>
-                  <Select
-                    value={selectedClass}
-                    onValueChange={setSelectedClass}
-                  >
-                    <SelectTrigger id="class" className={errors.class ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Sélectionner une classe" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {classes.length === 0 ? (
-                        <SelectItem value="none" disabled>
-                          Aucune classe assignée
-                        </SelectItem>
-                      ) : (
-                        classes.map((cls) => (
-                          <SelectItem key={cls.id} value={cls.id}>
-                            {cls.name} ({cls.department})
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {errors.class && <p className="text-sm text-red-500 mt-1">{errors.class}</p>}
-                  
-                  {selectedClass && getSelectedClassDetails()}
-                </div>
-                
-                <div>
-                  <Label htmlFor="room" className="flex items-center">
-                    <Building className="mr-2 h-4 w-4" />
-                    Salle disponible
-                  </Label>
-                  <Select
-                    value={selectedRoom}
-                    onValueChange={setSelectedRoom}
-                  >
-                    <SelectTrigger id="room" className={errors.room ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Sélectionner une salle" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {rooms.length === 0 ? (
-                        <SelectItem value="none" disabled>
-                          Aucune salle disponible
-                        </SelectItem>
-                      ) : (
-                        rooms.map((room) => (
-                          <SelectItem key={room.id} value={room.id}>
-                            <div className="flex items-center">
-                              {getRoomTypeIcon(room.type)}
-                              {room.name} (Capacité: {room.capacity})
-                            </div>
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {errors.room && <p className="text-sm text-red-500 mt-1">{errors.room}</p>}
-                  
-                  {selectedRoom && getSelectedRoomDetails()}
-                </div>
-                
-                <div>
-                  <Label htmlFor="notes">Notes supplémentaires (optionnel)</Label>
-                  <Textarea
-                    id="notes"
-                    placeholder="Précisez les besoins spécifiques..."
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows={4}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="signature">Signature électronique</Label>
-                  <div className="mt-2">
-                    <SignatureCanvas onChange={setSignature} />
-                  </div>
-                  {errors.signature && <p className="text-sm text-red-500 mt-1">{errors.signature}</p>}
-                </div>
+          <CardContent className="grid gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="roomType">Type de salle</Label>
+                <Select onValueChange={(value) => setSelectedRoomType(value as RoomType)}>
+                  <SelectTrigger id="roomType">
+                    <SelectValue placeholder="Sélectionner un type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="classroom">Salle de classe</SelectItem>
+                    <SelectItem value="training_room">Salle de formation</SelectItem>
+                    <SelectItem value="weapons_room">Salle d'armes</SelectItem>
+                    <SelectItem value="tactical_room">Salle tactique</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => navigate('/dashboard')}>
-                  Annuler
-                </Button>
-                <Button type="submit" disabled={submitting || loading}>
-                  {submitting ? 'Soumission en cours...' : 'Soumettre la demande'}
-                </Button>
+              <div>
+                <Label htmlFor="class">Classe</Label>
+                <Select onValueChange={(value) => {
+                  const selected = classes.find(cls => cls.id === value);
+                  setSelectedClass(selected || null);
+                }}>
+                  <SelectTrigger id="class">
+                    <SelectValue placeholder="Sélectionner une classe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {classes.map((cls) => (
+                      <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </form>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label>Date</Label>
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  locale={fr}
+                  className={cn("border rounded-md")}
+                />
+              </div>
+              <div>
+                <Label htmlFor="startTime">Heure de début</Label>
+                <Input
+                  type="time"
+                  id="startTime"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="endTime">Heure de fin</Label>
+                <Input
+                  type="time"
+                  id="endTime"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
+              </div>
+            </div>
+            {showValidationErrors && (!date || !startTime || !endTime) && (
+              <p className="text-red-500">Veuillez sélectionner une date et une heure de début et de fin.</p>
+            )}
+            <Button onClick={handleSearchRooms} disabled={loading}>
+              {loading ? 'Recherche en cours...' : 'Rechercher'}
+            </Button>
           </CardContent>
         </Card>
+
+        {searchPerformed && (
+          <div className="mt-6">
+            <h2 className="text-lg font-semibold mb-4">Salles disponibles</h2>
+            {loading ? (
+              <p>Chargement des salles disponibles...</p>
+            ) : availableRooms.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {availableRooms.map((room) => (
+                  <Card key={room.id} className="cursor-pointer hover:shadow-md transition-shadow duration-200" onClick={() => handleRoomSelection(room)}>
+                    <CardContent className="flex flex-col space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Building className="h-4 w-4 text-gray-500" />
+                        <h3 className="text-sm font-semibold">{room.name}</h3>
+                      </div>
+                      <p className="text-xs text-gray-500">Capacité: {room.capacity} personnes</p>
+                      <p className="text-xs text-gray-500">Étage: {room.floor || 'Non spécifié'}</p>
+                      <p className="text-xs text-gray-500">Bâtiment: {room.building || 'Non spécifié'}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <p>Aucune salle disponible pour les critères sélectionnés.</p>
+            )}
+          </div>
+        )}
       </div>
     </Layout>
   );

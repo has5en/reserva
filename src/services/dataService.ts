@@ -46,9 +46,14 @@ export const getClasses = async (): Promise<Class[]> => {
     if (error) throw error;
     
     return data.map(cls => ({
-      ...cls,
+      id: cls.id,
+      name: cls.name,
+      studentCount: cls.student_count || 0,
+      departmentId: cls.department_id,
       department: cls.departments?.name || "",
-      studentCount: cls.student_count || 0
+      unit: cls.unit || "",
+      created_at: cls.created_at,
+      updated_at: cls.updated_at
     })) || [];
   } catch (error) {
     console.error('Error fetching classes:', error);
@@ -70,9 +75,14 @@ export const getClassesByDepartment = async (departmentId: string): Promise<Clas
     if (error) throw error;
     
     return data.map(cls => ({
-      ...cls,
+      id: cls.id,
+      name: cls.name,
+      studentCount: cls.student_count || 0,
+      departmentId: cls.department_id,
       department: cls.departments?.name || "",
-      studentCount: cls.student_count || 0
+      unit: cls.unit || "",
+      created_at: cls.created_at,
+      updated_at: cls.updated_at
     })) || [];
   } catch (error) {
     console.error('Error fetching classes by department:', error);
@@ -174,7 +184,16 @@ export const getRooms = async (): Promise<Room[]> => {
   try {
     const { data, error } = await supabase.from('rooms').select('*');
     if (error) throw error;
-    return data || [];
+    return data.map(room => ({
+      id: room.id,
+      name: room.name,
+      capacity: room.capacity,
+      available: room.is_available || false,
+      type: room.type,
+      equipment: room.equipment,
+      floor: room.floor,
+      building: room.building
+    })) || [];
   } catch (error) {
     console.error('Error fetching rooms:', error);
     return [];
@@ -185,7 +204,18 @@ export const getRoomById = async (id: string): Promise<Room | null> => {
   try {
     const { data, error } = await supabase.from('rooms').select('*').eq('id', id).single();
     if (error) throw error;
-    return data;
+    if (!data) return null;
+    
+    return {
+      id: data.id,
+      name: data.name,
+      capacity: data.capacity,
+      available: data.is_available || false,
+      type: data.type,
+      equipment: data.equipment,
+      floor: data.floor,
+      building: data.building
+    };
   } catch (error) {
     console.error(`Error fetching room ${id}:`, error);
     return null;
@@ -199,11 +229,21 @@ export const getAvailableRoomsByType = async (type: string, date: string, startT
     const { data, error } = await supabase
       .from('rooms')
       .select('*')
-      .eq('type', type)
-      .eq('available', true);
+      .eq('type', type as RoomType)
+      .eq('is_available', true);
     
     if (error) throw error;
-    return data || [];
+    
+    return data.map(room => ({
+      id: room.id,
+      name: room.name,
+      capacity: room.capacity,
+      available: room.is_available || false,
+      type: room.type,
+      equipment: room.equipment,
+      floor: room.floor,
+      building: room.building
+    })) || [];
   } catch (error) {
     console.error('Error fetching available rooms:', error);
     return [];
@@ -212,7 +252,18 @@ export const getAvailableRoomsByType = async (type: string, date: string, startT
 
 export const updateRoom = async (room: Room): Promise<void> => {
   try {
-    const { error } = await supabase.from('rooms').update(room).eq('id', room.id);
+    const dbRoom = {
+      id: room.id,
+      name: room.name,
+      capacity: room.capacity,
+      is_available: room.available,
+      type: room.type,
+      equipment: room.equipment,
+      floor: room.floor,
+      building: room.building
+    };
+    
+    const { error } = await supabase.from('rooms').update(dbRoom).eq('id', room.id);
     if (error) throw error;
   } catch (error) {
     console.error('Error updating room:', error);
@@ -222,9 +273,29 @@ export const updateRoom = async (room: Room): Promise<void> => {
 
 export const addRoom = async (room: Omit<Room, 'id'>): Promise<Room> => {
   try {
-    const { data, error } = await supabase.from('rooms').insert(room).select().single();
+    const dbRoom = {
+      name: room.name,
+      capacity: room.capacity,
+      is_available: room.available,
+      type: room.type,
+      equipment: room.equipment,
+      floor: room.floor,
+      building: room.building
+    };
+    
+    const { data, error } = await supabase.from('rooms').insert(dbRoom).select().single();
     if (error) throw error;
-    return data;
+    
+    return {
+      id: data.id,
+      name: data.name,
+      capacity: data.capacity,
+      available: data.is_available || false,
+      type: data.type,
+      equipment: data.equipment,
+      floor: data.floor,
+      building: data.building
+    };
   } catch (error) {
     console.error('Error adding room:', error);
     throw error;
@@ -246,7 +317,17 @@ export const getEquipment = async (): Promise<Equipment[]> => {
   try {
     const { data, error } = await supabase.from('equipment').select('*');
     if (error) throw error;
-    return data || [];
+    return data.map(eq => ({
+      id: eq.id,
+      name: eq.name,
+      category: eq.category || '',
+      available: eq.available_quantity,
+      availableQuantity: eq.available_quantity,
+      totalQuantity: eq.total_quantity,
+      location: eq.location,
+      description: eq.description,
+      requires_clearance: eq.requires_clearance
+    })) || [];
   } catch (error) {
     console.error('Error fetching equipment:', error);
     return [];
@@ -257,7 +338,19 @@ export const getEquipmentById = async (id: string): Promise<Equipment | null> =>
   try {
     const { data, error } = await supabase.from('equipment').select('*').eq('id', id).single();
     if (error) throw error;
-    return data;
+    if (!data) return null;
+    
+    return {
+      id: data.id,
+      name: data.name,
+      category: data.category || '',
+      available: data.available_quantity,
+      availableQuantity: data.available_quantity,
+      totalQuantity: data.total_quantity,
+      location: data.location,
+      description: data.description,
+      requires_clearance: data.requires_clearance
+    };
   } catch (error) {
     console.error(`Error fetching equipment ${id}:`, error);
     return null;
@@ -269,10 +362,21 @@ export const getAvailableEquipment = async (): Promise<Equipment[]> => {
     const { data, error } = await supabase
       .from('equipment')
       .select('*')
-      .gt('available', 0);
+      .gt('available_quantity', 0);
     
     if (error) throw error;
-    return data || [];
+    
+    return data.map(eq => ({
+      id: eq.id,
+      name: eq.name,
+      category: eq.category || '',
+      available: eq.available_quantity,
+      availableQuantity: eq.available_quantity,
+      totalQuantity: eq.total_quantity,
+      location: eq.location,
+      description: eq.description,
+      requires_clearance: eq.requires_clearance
+    })) || [];
   } catch (error) {
     console.error('Error fetching available equipment:', error);
     return [];
@@ -281,7 +385,18 @@ export const getAvailableEquipment = async (): Promise<Equipment[]> => {
 
 export const updateEquipment = async (equipment: Equipment): Promise<void> => {
   try {
-    const { error } = await supabase.from('equipment').update(equipment).eq('id', equipment.id);
+    const dbEquipment = {
+      id: equipment.id,
+      name: equipment.name,
+      category: equipment.category,
+      available_quantity: equipment.available,
+      total_quantity: equipment.totalQuantity || equipment.available,
+      location: equipment.location,
+      description: equipment.description,
+      requires_clearance: equipment.requires_clearance
+    };
+    
+    const { error } = await supabase.from('equipment').update(dbEquipment).eq('id', equipment.id);
     if (error) throw error;
   } catch (error) {
     console.error('Error updating equipment:', error);
@@ -291,9 +406,30 @@ export const updateEquipment = async (equipment: Equipment): Promise<void> => {
 
 export const addEquipment = async (equipment: Omit<Equipment, 'id'>): Promise<Equipment> => {
   try {
-    const { data, error } = await supabase.from('equipment').insert(equipment).select().single();
+    const dbEquipment = {
+      name: equipment.name,
+      category: equipment.category,
+      available_quantity: equipment.available,
+      total_quantity: equipment.totalQuantity || equipment.available,
+      location: equipment.location,
+      description: equipment.description,
+      requires_clearance: equipment.requires_clearance
+    };
+    
+    const { data, error } = await supabase.from('equipment').insert(dbEquipment).select().single();
     if (error) throw error;
-    return data;
+    
+    return {
+      id: data.id,
+      name: data.name,
+      category: data.category || '',
+      available: data.available_quantity,
+      availableQuantity: data.available_quantity,
+      totalQuantity: data.total_quantity,
+      location: data.location,
+      description: data.description,
+      requires_clearance: data.requires_clearance
+    };
   } catch (error) {
     console.error('Error adding equipment:', error);
     throw error;
