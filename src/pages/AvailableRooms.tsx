@@ -1,178 +1,106 @@
-
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
+import { Room } from '@/data/models';
 import { getRooms } from '@/services/dataService';
-import { Room, RoomType } from '@/data/models';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Building, Users, Presentation, Swords, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Building2, Users, BookOpen, Computer, Beaker } from 'lucide-react';
-import RoomTypeSelector from '@/components/RoomTypeSelector';
+import { RoomType } from '@/data/models';
 
 const AvailableRooms = () => {
-  const navigate = useNavigate();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roomType, setRoomType] = useState<string>('all');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchRooms = async () => {
-      setLoading(true);
-      try {
-        const roomsData = await getRooms();
-        setRooms(roomsData);
-      } catch (error) {
-        console.error('Failed to fetch rooms:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchRooms();
   }, []);
 
-  const getRoomTypeIcon = (type: RoomType) => {
-    switch (type) {
-      case 'computer_lab':
-        return <Computer className="h-5 w-5 text-blue-500" />;
-      case 'science_lab':
-        return <Beaker className="h-5 w-5 text-green-500" />;
-      case 'classroom':
-        return <BookOpen className="h-5 w-5 text-orange-500" />;
-      case 'meeting_room':
-        return <Users className="h-5 w-5 text-purple-500" />;
-      default:
-        return <Building2 className="h-5 w-5 text-gray-500" />;
+  const fetchRooms = async () => {
+    setLoading(true);
+    try {
+      const data = await getRooms();
+      setRooms(data);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch rooms');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getTypeLabel = (type: RoomType): string => {
-    switch (type) {
-      case 'computer_lab':
-        return 'Salle informatique';
-      case 'science_lab':
-        return 'Laboratoire scientifique';
-      case 'classroom':
-        return 'Salle de classe';
-      case 'meeting_room':
-        return 'Salle de réunion';
-      default:
-        return 'Autre';
+  const getIconForRoomType = (type: string) => {
+    // Mappez les anciens types vers les nouveaux types
+    const typeMapping: Record<string, RoomType> = {
+      'computer_lab': 'classroom',
+      'science_lab': 'classroom',
+      'classroom': 'classroom',
+      'meeting_room': 'training_room'
+    };
+    
+    const mappedType = typeMapping[type] || 'classroom';
+    
+    if (mappedType === 'classroom') {
+      return <Users className="h-5 w-5" />;
+    } else if (mappedType === 'training_room') {
+      return <Presentation className="h-5 w-5" />;
+    } else if (mappedType === 'weapons_room') {
+      return <Swords className="h-5 w-5" />;
+    } else if (mappedType === 'tactical_room') {
+      return <MapPin className="h-5 w-5" />;
     }
+    return <Building className="h-5 w-5" />;
   };
 
-  const filteredRooms = rooms.filter(room => {
-    const matchesSearch = 
-      room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (room.building && room.building.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (room.description && room.description.toLowerCase().includes(searchTerm.toLowerCase()));
+  const getColorForRoomType = (type: string) => {
+    // Mappez les anciens types vers les nouveaux types
+    const typeMapping: Record<string, RoomType> = {
+      'computer_lab': 'classroom',
+      'science_lab': 'classroom',
+      'classroom': 'classroom',
+      'meeting_room': 'training_room'
+    };
     
-    const matchesType = roomType === 'all' || room.type === roomType;
+    const mappedType = typeMapping[type] || 'classroom';
     
-    return matchesSearch && matchesType;
-  });
-
-  const handleReserveClick = (roomId: string) => {
-    navigate(`/room-reservation?roomId=${roomId}`);
+    if (mappedType === 'classroom') {
+      return 'bg-blue-100 text-blue-800';
+    } else if (mappedType === 'training_room') {
+      return 'bg-green-100 text-green-800';
+    } else if (mappedType === 'weapons_room') {
+      return 'bg-red-100 text-red-800';
+    } else if (mappedType === 'tactical_room') {
+      return 'bg-purple-100 text-purple-800';
+    }
+    return 'bg-gray-100 text-gray-800';
   };
+
+  if (loading) {
+    return <Layout title="Salles disponibles">Chargement des salles...</Layout>;
+  }
+
+  if (error) {
+    return <Layout title="Salles disponibles">Erreur: {error}</Layout>;
+  }
 
   return (
-    <Layout title="Salles Disponibles">
-      <div className="space-y-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Liste des salles disponibles</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
-              <div className="flex-1">
-                <Label htmlFor="search">Rechercher</Label>
-                <Input
-                  id="search"
-                  placeholder="Rechercher par nom, bâtiment..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <div className="w-full md:w-64">
-                <Label htmlFor="roomType">Type de salle</Label>
-                <RoomTypeSelector 
-                  selectedType={roomType} 
-                  onChange={setRoomType}
-                  includeAll={true}
-                  className="mt-1" 
-                />
-              </div>
+    <Layout title="Salles disponibles">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {rooms.map(room => (
+          <div key={room.id} className="bg-white rounded-lg shadow-md p-4">
+            <div className="flex items-center space-x-3 mb-3">
+              <span className={`p-1 rounded-full ${getColorForRoomType(room.type)}`}>
+                {getIconForRoomType(room.type)}
+              </span>
+              <h3 className="text-lg font-semibold">{room.name}</h3>
             </div>
-
-            {loading ? (
-              <div className="text-center py-8">Chargement des salles...</div>
-            ) : filteredRooms.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Aucune salle disponible correspondant à vos critères.</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Capacité</TableHead>
-                    <TableHead>Emplacement</TableHead>
-                    <TableHead>Disponibilité</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRooms.map((room) => (
-                    <TableRow key={room.id}>
-                      <TableCell>
-                        <div className="flex items-center">
-                          {getRoomTypeIcon(room.type)}
-                          <span className="ml-2">{getTypeLabel(room.type)}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">{room.name}</TableCell>
-                      <TableCell>{room.capacity} personnes</TableCell>
-                      <TableCell>
-                        {room.building && room.floor 
-                          ? `${room.building}, Étage ${room.floor}` 
-                          : room.building || 'Non spécifié'}
-                      </TableCell>
-                      <TableCell>
-                        {room.available ? (
-                          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
-                            Disponible
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">
-                            Indisponible
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleReserveClick(room.id)}
-                          disabled={!room.available}
-                        >
-                          Réserver
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+            <p>Capacité: {room.capacity} personnes</p>
+            <p>Étage: {room.floor || 'Non spécifié'}</p>
+            <p>Bâtiment: {room.building || 'Non spécifié'}</p>
+            <Badge variant={room.available ? "default" : "destructive"}>
+              {room.available ? 'Disponible' : 'Indisponible'}
+            </Badge>
+          </div>
+        ))}
       </div>
     </Layout>
   );

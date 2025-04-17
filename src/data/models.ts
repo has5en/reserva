@@ -1,4 +1,3 @@
-
 export type RequestStatus = 'pending' | 'admin_approved' | 'approved' | 'rejected' | 'returned';
 export type RequestType = 'room' | 'equipment' | 'printing';
 export type RoomType = 'classroom' | 'training_room' | 'weapons_room' | 'tactical_room';
@@ -47,6 +46,10 @@ export interface Equipment {
   available: number;
   department?: string;
   requires_clearance?: boolean;
+  description?: string;
+  location?: string;
+  totalQuantity?: number;
+  availableQuantity?: number;
 }
 
 export interface Request {

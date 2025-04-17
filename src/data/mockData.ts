@@ -7,7 +7,7 @@ export const MOCK_ROOMS: Room[] = [
     name: 'Lab A',
     capacity: 30,
     available: true,
-    type: 'computer_lab',
+    type: 'classroom',
     software: ['Python', 'MATLAB', 'Visual Studio Code'],
     equipment: ['Projecteur', 'Tableau blanc interactif'],
     department: 'Informatique'
@@ -17,7 +17,7 @@ export const MOCK_ROOMS: Room[] = [
     name: 'Lab B',
     capacity: 25,
     available: true,
-    type: 'computer_lab',
+    type: 'classroom',
     software: ['AutoCAD', 'Adobe Creative Suite'],
     equipment: ['Imprimante 3D', 'Scanner'],
     department: 'Design'
@@ -36,7 +36,7 @@ export const MOCK_ROOMS: Room[] = [
     name: 'Lab Physique',
     capacity: 20,
     available: true,
-    type: 'science_lab',
+    type: 'classroom',
     equipment: ['Microscopes', 'Équipement d\'expérimentation'],
     department: 'Sciences'
   }
@@ -47,25 +47,29 @@ export const MOCK_CLASSES: Class[] = [
     id: '1',
     name: 'Classe 3A',
     studentCount: 30,
-    department: 'Informatique'
+    department: 'Informatique',
+    departmentId: '1'
   },
   {
     id: '2',
     name: 'Classe 4B',
     studentCount: 25,
-    department: 'Informatique'
+    department: 'Informatique',
+    departmentId: '1'
   },
   {
     id: '3',
     name: 'Design 2',
     studentCount: 18,
-    department: 'Design'
+    department: 'Design',
+    departmentId: '2'
   },
   {
     id: '4',
     name: 'Physique Appliquée',
     studentCount: 22,
-    department: 'Sciences'
+    department: 'Sciences',
+    departmentId: '3'
   }
 ];
 
