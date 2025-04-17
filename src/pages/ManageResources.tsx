@@ -1,132 +1,93 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/components/ui/use-toast';
 import Layout from '@/components/Layout';
+import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  RoomManagementTable, 
-  EquipmentManagementTable 
-} from '@/components/ResourceManagementTables';
+import { ResourceManagementTables } from '@/components/ResourceManagementTables';
 import { ResourceUpdatesTable } from '@/components/ResourceUpdatesTable';
-import { Room, Equipment } from '@/data/models';
-import { 
-  getRooms, 
-  getEquipment, 
-  updateRoom, 
-  addRoom, 
-  deleteRoom,
-  updateEquipment,
-  addEquipment,
-  deleteEquipment,
-  getResourceUpdates
-} from '@/services/dataService';
-import { Building2, Package, History } from 'lucide-react';
+import { getRooms, getEquipment, getResourceUpdates } from '@/services/dataService';
+import { Room, Equipment, ResourceUpdate } from '@/data/models';
+import { Loader2 } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
 const ManageResources = () => {
-  const { currentUser } = useAuth();
+  const { hasRole } = useAuth();
+  const [activeTab, setActiveTab] = useState<string>('rooms');
   const [rooms, setRooms] = useState<Room[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('rooms');
+  const [updates, setUpdates] = useState<ResourceUpdate[]>([]);
+  const [loadingRooms, setLoadingRooms] = useState(true);
+  const [loadingEquipment, setLoadingEquipment] = useState(true);
+  const [loadingUpdates, setLoadingUpdates] = useState(true);
+
+  const canManageResources = hasRole('admin') || hasRole('supervisor');
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [roomsData, equipmentData] = await Promise.all([
-          getRooms(),
-          getEquipment()
-        ]);
-        
-        setRooms(roomsData);
-        setEquipment(equipmentData);
-      } catch (error) {
-        console.error('Failed to fetch resources:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Erreur',
-          description: 'Impossible de charger les ressources. Veuillez réessayer.',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchRooms();
+    fetchEquipment();
+    fetchResourceUpdates();
   }, []);
 
-  const handleEditRoom = async (id: string, updates: Partial<Room>) => {
+  const fetchRooms = async () => {
     try {
-      const updatedRoom = await updateRoom(id, updates);
-      setRooms(rooms.map(room => room.id === id ? updatedRoom : room));
-      return Promise.resolve();
+      setLoadingRooms(true);
+      const data = await getRooms();
+      setRooms(data);
     } catch (error) {
-      console.error('Failed to update room:', error);
-      return Promise.reject(error);
+      console.error('Error fetching rooms:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de charger les salles.",
+      });
+    } finally {
+      setLoadingRooms(false);
     }
   };
 
-  const handleAddRoom = async (room: Omit<Room, 'id'>) => {
+  const fetchEquipment = async () => {
     try {
-      const newRoom = await addRoom(room);
-      setRooms([...rooms, newRoom]);
-      return Promise.resolve();
+      setLoadingEquipment(true);
+      const data = await getEquipment();
+      setEquipment(data);
     } catch (error) {
-      console.error('Failed to add room:', error);
-      return Promise.reject(error);
+      console.error('Error fetching equipment:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de charger les équipements.",
+      });
+    } finally {
+      setLoadingEquipment(false);
     }
   };
 
-  const handleDeleteRoom = async (id: string) => {
+  const fetchResourceUpdates = async () => {
     try {
-      await deleteRoom(id);
-      setRooms(rooms.filter(room => room.id !== id));
-      return Promise.resolve();
+      setLoadingUpdates(true);
+      const data = await getResourceUpdates();
+      setUpdates(data);
     } catch (error) {
-      console.error('Failed to delete room:', error);
-      return Promise.reject(error);
+      console.error('Error fetching resource updates:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de charger l'historique des modifications.",
+      });
+    } finally {
+      setLoadingUpdates(false);
     }
   };
 
-  const handleEditEquipment = async (id: string, updates: Partial<Equipment>) => {
-    try {
-      const updatedEquipment = await updateEquipment(id, updates);
-      setEquipment(equipment.map(item => item.id === id ? updatedEquipment : item));
-      return Promise.resolve();
-    } catch (error) {
-      console.error('Failed to update equipment:', error);
-      return Promise.reject(error);
-    }
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
   };
 
-  const handleAddEquipment = async (equipmentItem: Omit<Equipment, 'id'>) => {
-    try {
-      const newEquipment = await addEquipment(equipmentItem);
-      setEquipment([...equipment, newEquipment]);
-      return Promise.resolve();
-    } catch (error) {
-      console.error('Failed to add equipment:', error);
-      return Promise.reject(error);
-    }
-  };
-
-  const handleDeleteEquipment = async (id: string) => {
-    try {
-      await deleteEquipment(id);
-      setEquipment(equipment.filter(item => item.id !== id));
-      return Promise.resolve();
-    } catch (error) {
-      console.error('Failed to delete equipment:', error);
-      return Promise.reject(error);
-    }
-  };
-
-  if (loading) {
+  if (!canManageResources) {
     return (
       <Layout title="Gestion des ressources">
-        <div className="flex justify-center items-center h-64">
-          <p>Chargement des ressources...</p>
+        <div className="bg-destructive/10 text-destructive p-4 rounded-md">
+          Vous n'avez pas les autorisations nécessaires pour accéder à cette page.
         </div>
       </Layout>
     );
@@ -134,42 +95,49 @@ const ManageResources = () => {
 
   return (
     <Layout title="Gestion des ressources">
-      <Tabs defaultValue="rooms" className="max-w-5xl mx-auto" value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="rooms" className="flex items-center">
-            <Building2 className="mr-2 h-4 w-4" />
-            Salles
-          </TabsTrigger>
-          <TabsTrigger value="equipment" className="flex items-center">
-            <Package className="mr-2 h-4 w-4" />
-            Matériel
-          </TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center">
-            <History className="mr-2 h-4 w-4" />
-            Historique
-          </TabsTrigger>
+          <TabsTrigger value="rooms">Salles</TabsTrigger>
+          <TabsTrigger value="equipment">Équipements</TabsTrigger>
+          <TabsTrigger value="updates">Historique</TabsTrigger>
         </TabsList>
         
         <TabsContent value="rooms">
-          <RoomManagementTable
-            rooms={rooms}
-            onEditRoom={handleEditRoom}
-            onAddRoom={handleAddRoom}
-            onDeleteRoom={handleDeleteRoom}
-          />
+          {loadingRooms ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <ResourceManagementTables 
+              type="room" 
+              items={rooms} 
+              onUpdate={fetchRooms}
+            />
+          )}
         </TabsContent>
         
         <TabsContent value="equipment">
-          <EquipmentManagementTable
-            equipment={equipment}
-            onEditEquipment={handleEditEquipment}
-            onAddEquipment={handleAddEquipment}
-            onDeleteEquipment={handleDeleteEquipment}
-          />
+          {loadingEquipment ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <ResourceManagementTables 
+              type="equipment" 
+              items={equipment} 
+              onUpdate={fetchEquipment}
+            />
+          )}
         </TabsContent>
         
-        <TabsContent value="history">
-          <ResourceUpdatesTable />
+        <TabsContent value="updates">
+          {loadingUpdates ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <ResourceUpdatesTable updates={updates} />
+          )}
         </TabsContent>
       </Tabs>
     </Layout>

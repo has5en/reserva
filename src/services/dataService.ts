@@ -1,8 +1,8 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Room, Equipment, Request, ResourceUpdate, Department, Class, TeacherClass, Notification, RoomType } from '@/data/models';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useAuth } from '@/contexts/AuthContext';
 
 // Utility functions
 export const formatDate = (dateString: string): string => {
@@ -31,7 +31,7 @@ export const getDepartments = async (): Promise<Department[]> => {
   }
 };
 
-export const addDepartment = async (department: Omit<Department, 'id' | 'created_at' | 'updated_at'>): Promise<Department | null> => {
+export const addDepartment = async (department: { name: string; description?: string }): Promise<Department | null> => {
   try {
     const { data, error } = await supabase
       .from('departments')
@@ -347,14 +347,12 @@ export const getRoomById = async (id: string): Promise<Room | null> => {
   }
 };
 
-export const getAvailableRoomsByType = async (type: string, date: string, startTime: string, endTime: string): Promise<Room[]> => {
-  // Cette fonction devrait vérifier les disponibilités des salles selon les réservations existantes
-  // Pour l'instant, on renvoie simplement toutes les salles du type spécifié
+export const getAvailableRoomsByType = async (type: RoomType, date: string, startTime: string, endTime: string): Promise<Room[]> => {
   try {
     const { data, error } = await supabase
       .from('rooms')
       .select('*')
-      .eq('type', type as RoomType)
+      .eq('type', type)
       .eq('is_available', true);
     
     if (error) throw error;
@@ -583,29 +581,30 @@ export const getRequest = async (id: string): Promise<Request | null> => {
     if (error) throw error;
     if (!data) return null;
     
+    // Adapter les champs selon la structure actuelle de la base de données
     return {
       id: data.id,
-      type: data.type,
-      status: data.status,
+      type: 'room', // Par défaut pour les réservations
+      status: data.status as RequestStatus,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
       userId: data.user_id,
-      userName: data.user_name || '',
+      userName: data.user_id, // Utiliser l'id comme nom temporaire
       roomId: data.room_id,
-      roomName: data.room_name,
+      roomName: data.room_id, // Utiliser l'id comme nom temporaire
       equipmentId: data.equipment_id,
-      equipmentName: data.equipment_name,
+      equipmentName: data.equipment_id, // Utiliser l'id comme nom temporaire
       equipmentQuantity: data.equipment_quantity,
       classId: data.class_id || '',
       className: data.class_name || '',
       startTime: data.start_time,
       endTime: data.end_time,
-      date: data.date,
-      notes: data.notes,
+      date: data.start_time?.split('T')[0] || '', // Utiliser la date de start_time
+      notes: data.purpose || '',
       requires_commander_approval: data.requires_commander_approval,
-      adminApproval: data.admin_approval,
-      supervisorApproval: data.supervisor_approval,
-      returnInfo: data.return_info
+      adminApproval: null, // Non présent dans la structure actuelle
+      supervisorApproval: null, // Non présent dans la structure actuelle
+      returnInfo: null // Non présent dans la structure actuelle
     };
   } catch (error) {
     console.error(`Error fetching request ${id}:`, error);
@@ -624,28 +623,28 @@ export const getRequests = async (): Promise<Request[]> => {
     
     return data.map(req => ({
       id: req.id,
-      type: req.type,
-      status: req.status,
+      type: 'room' as RequestType, // Par défaut pour les réservations
+      status: req.status as RequestStatus,
       createdAt: req.created_at,
       updatedAt: req.updated_at,
       userId: req.user_id,
-      userName: req.user_name || '',
+      userName: req.user_id, // Utiliser l'id comme nom temporaire
       roomId: req.room_id,
-      roomName: req.room_name,
+      roomName: req.room_id, // Utiliser l'id comme nom temporaire
       equipmentId: req.equipment_id,
-      equipmentName: req.equipment_name,
+      equipmentName: req.equipment_id, // Utiliser l'id comme nom temporaire
       equipmentQuantity: req.equipment_quantity,
       classId: req.class_id || '',
       className: req.class_name || '',
       startTime: req.start_time,
       endTime: req.end_time,
-      date: req.date,
-      notes: req.notes,
+      date: req.start_time?.split('T')[0] || '', // Utiliser la date de start_time
+      notes: req.purpose || '',
       requires_commander_approval: req.requires_commander_approval,
-      adminApproval: req.admin_approval,
-      supervisorApproval: req.supervisor_approval,
-      returnInfo: req.return_info
-    })) || [];
+      adminApproval: null, // Non présent dans la structure actuelle
+      supervisorApproval: null, // Non présent dans la structure actuelle
+      returnInfo: null // Non présent dans la structure actuelle
+    }));
   } catch (error) {
     console.error('Error fetching requests:', error);
     return [];
@@ -664,35 +663,35 @@ export const getRequestsByUserId = async (userId: string): Promise<Request[]> =>
     
     return data.map(req => ({
       id: req.id,
-      type: req.type,
-      status: req.status,
+      type: 'room' as RequestType, // Par défaut pour les réservations
+      status: req.status as RequestStatus,
       createdAt: req.created_at,
       updatedAt: req.updated_at,
       userId: req.user_id,
-      userName: req.user_name || '',
+      userName: req.user_id, // Utiliser l'id comme nom temporaire
       roomId: req.room_id,
-      roomName: req.room_name,
+      roomName: req.room_id, // Utiliser l'id comme nom temporaire
       equipmentId: req.equipment_id,
-      equipmentName: req.equipment_name,
+      equipmentName: req.equipment_id, // Utiliser l'id comme nom temporaire
       equipmentQuantity: req.equipment_quantity,
       classId: req.class_id || '',
       className: req.class_name || '',
       startTime: req.start_time,
       endTime: req.end_time,
-      date: req.date,
-      notes: req.notes,
+      date: req.start_time?.split('T')[0] || '', // Utiliser la date de start_time
+      notes: req.purpose || '',
       requires_commander_approval: req.requires_commander_approval,
-      adminApproval: req.admin_approval,
-      supervisorApproval: req.supervisor_approval,
-      returnInfo: req.return_info
-    })) || [];
+      adminApproval: null, // Non présent dans la structure actuelle
+      supervisorApproval: null, // Non présent dans la structure actuelle
+      returnInfo: null // Non présent dans la structure actuelle
+    }));
   } catch (error) {
     console.error(`Error fetching requests for user ${userId}:`, error);
     return [];
   }
 };
 
-export const getRequestsByStatus = async (status: string): Promise<Request[]> => {
+export const getRequestsByStatus = async (status: RequestStatus): Promise<Request[]> => {
   try {
     const { data, error } = await supabase
       .from('reservations')
@@ -704,28 +703,28 @@ export const getRequestsByStatus = async (status: string): Promise<Request[]> =>
     
     return data.map(req => ({
       id: req.id,
-      type: req.type,
-      status: req.status,
+      type: 'room' as RequestType, // Par défaut pour les réservations
+      status: req.status as RequestStatus,
       createdAt: req.created_at,
       updatedAt: req.updated_at,
       userId: req.user_id,
-      userName: req.user_name || '',
+      userName: req.user_id, // Utiliser l'id comme nom temporaire
       roomId: req.room_id,
-      roomName: req.room_name,
+      roomName: req.room_id, // Utiliser l'id comme nom temporaire
       equipmentId: req.equipment_id,
-      equipmentName: req.equipment_name,
+      equipmentName: req.equipment_id, // Utiliser l'id comme nom temporaire
       equipmentQuantity: req.equipment_quantity,
       classId: req.class_id || '',
       className: req.class_name || '',
       startTime: req.start_time,
       endTime: req.end_time,
-      date: req.date,
-      notes: req.notes,
+      date: req.start_time?.split('T')[0] || '', // Utiliser la date de start_time
+      notes: req.purpose || '',
       requires_commander_approval: req.requires_commander_approval,
-      adminApproval: req.admin_approval,
-      supervisorApproval: req.supervisor_approval,
-      returnInfo: req.return_info
-    })) || [];
+      adminApproval: null, // Non présent dans la structure actuelle
+      supervisorApproval: null, // Non présent dans la structure actuelle
+      returnInfo: null // Non présent dans la structure actuelle
+    }));
   } catch (error) {
     console.error(`Error fetching requests with status ${status}:`, error);
     return [];
@@ -735,17 +734,49 @@ export const getRequestsByStatus = async (status: string): Promise<Request[]> =>
 export const createRequest = async (request: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<Request> => {
   try {
     const { data, error } = await supabase
-      .from('requests')
+      .from('reservations')
       .insert({
-        ...request,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        user_id: request.userId,
+        room_id: request.roomId,
+        equipment_id: request.equipmentId,
+        equipment_quantity: request.equipmentQuantity,
+        class_id: request.classId,
+        class_name: request.className,
+        start_time: request.startTime,
+        end_time: request.endTime,
+        purpose: request.notes,
+        status: request.status,
+        requires_commander_approval: request.requires_commander_approval
       })
       .select()
       .single();
     
     if (error) throw error;
-    return data;
+    
+    return {
+      id: data.id,
+      type: 'room', // Défaut pour les réservations
+      status: data.status as RequestStatus,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+      userId: data.user_id,
+      userName: data.user_id,
+      roomId: data.room_id,
+      roomName: data.room_id,
+      equipmentId: data.equipment_id,
+      equipmentName: data.equipment_id,
+      equipmentQuantity: data.equipment_quantity,
+      classId: data.class_id || '',
+      className: data.class_name || '',
+      startTime: data.start_time,
+      endTime: data.end_time,
+      date: data.start_time?.split('T')[0] || '',
+      notes: data.purpose || '',
+      requires_commander_approval: data.requires_commander_approval,
+      adminApproval: null,
+      supervisorApproval: null,
+      returnInfo: null
+    };
   } catch (error) {
     console.error('Error creating request:', error);
     throw error;
@@ -765,39 +796,39 @@ export const updateRequest = async (
       updated_at: new Date().toISOString()
     };
 
-    // Ajouter les informations d'approbation ou de retour selon le statut
-    if (status === 'admin_approved') {
-      updatedRequest.admin_approval = {
-        userId: userId,
-        userName: userName,
-        timestamp: new Date().toISOString(),
-        notes: notes || ''
-      };
-    } else if (status === 'approved') {
-      updatedRequest.supervisor_approval = {
-        userId: userId,
-        userName: userName,
-        timestamp: new Date().toISOString(),
-        notes: notes || ''
-      };
-    } else if (status === 'returned') {
-      updatedRequest.return_info = {
-        userId: userId,
-        userName: userName,
-        timestamp: new Date().toISOString(),
-        notes: notes || ''
-      };
-    }
-
     const { data, error } = await supabase
-      .from('requests')
+      .from('reservations')
       .update(updatedRequest)
       .eq('id', id)
       .select()
       .single();
     
     if (error) throw error;
-    return data;
+    
+    return {
+      id: data.id,
+      type: 'room', // Défaut pour les réservations
+      status: data.status as RequestStatus,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+      userId: data.user_id,
+      userName: data.user_id,
+      roomId: data.room_id,
+      roomName: data.room_id,
+      equipmentId: data.equipment_id,
+      equipmentName: data.equipment_id,
+      equipmentQuantity: data.equipment_quantity,
+      classId: data.class_id || '',
+      className: data.class_name || '',
+      startTime: data.start_time,
+      endTime: data.end_time,
+      date: data.start_time?.split('T')[0] || '',
+      notes: data.purpose || '',
+      requires_commander_approval: data.requires_commander_approval,
+      adminApproval: null,
+      supervisorApproval: null,
+      returnInfo: null
+    };
   } catch (error) {
     console.error(`Error updating request ${id}:`, error);
     throw error;
@@ -814,7 +845,7 @@ export const returnEquipment = async (
     await updateRequest(requestId, 'returned', userId, userName, notes);
     
     // Mettre à jour les stocks d'équipement ici si nécessaire
-    const request = await getRequestById(requestId);
+    const request = await getRequest(requestId);
     if (request?.equipmentId && request.equipmentQuantity) {
       const equipment = await getEquipmentById(request.equipmentId);
       if (equipment) {

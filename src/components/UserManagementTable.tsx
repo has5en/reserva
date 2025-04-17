@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { User, useAuth, UserRole } from '@/contexts/AuthContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -26,17 +27,7 @@ const createUserFormSchema = (userRole: UserRole) => {
     password: z.string().min(6, { message: 'Le mot de passe doit contenir au moins 6 caractères' }),
   };
 
-  if (userRole === 'teacher') {
-    return z.object({
-      ...baseSchema,
-      department: z.string().min(1, { message: 'Le département est obligatoire' }),
-    });
-  }
-
-  return z.object({
-    ...baseSchema,
-    department: z.string().optional(),
-  });
+  return z.object(baseSchema);
 };
 
 type UserFormValues = z.infer<ReturnType<typeof createUserFormSchema>>;
@@ -64,7 +55,6 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
       name: '',
       email: '',
       password: '',
-      department: '',
     },
   });
 
@@ -74,7 +64,6 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
       name: '',
       email: '',
       password: '',
-      department: '',
     },
   });
 
@@ -84,7 +73,6 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
         name: data.name,
         email: data.email,
         password: data.password,
-        department: data.department,
         role: userRole,
       });
 
@@ -111,7 +99,6 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
           name: data.name,
           email: data.email,
           password: data.password || undefined,
-          department: data.department,
           role: userRole,
         });
 
@@ -161,7 +148,6 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
       name: user.name,
       email: user.email,
       password: '',
-      department: user.department || '',
     });
     setIsEditDialogOpen(true);
   };
@@ -179,10 +165,8 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
   };
 
   useEffect(() => {
-    if (userRole === 'teacher') {
-      fetchDepartments();
-    }
-  }, [userRole]);
+    fetchDepartments();
+  }, []);
 
   useEffect(() => {
     if (selectedDepartment) {
@@ -304,7 +288,6 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
               <TableRow>
                 <TableHead>Nom</TableHead>
                 <TableHead>Email</TableHead>
-                {userRole === 'teacher' && <TableHead>Département</TableHead>}
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -313,9 +296,6 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
-                  {userRole === 'teacher' && (
-                    <TableCell>{user.department || '-'}</TableCell>
-                  )}
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       {userRole === 'teacher' && (
@@ -402,30 +382,6 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={addForm.control}
-                name="department"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{userRole === 'teacher' ? 'Département *' : 'Département'}</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un département" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Informatique">Informatique</SelectItem>
-                        <SelectItem value="Sciences">Sciences</SelectItem>
-                        <SelectItem value="Mathématiques">Mathématiques</SelectItem>
-                        <SelectItem value="Langues">Langues</SelectItem>
-                        <SelectItem value="Histoire-Géographie">Histoire-Géographie</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <DialogFooter>
                 <Button type="submit">Ajouter</Button>
               </DialogFooter>
@@ -478,30 +434,6 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
                     <FormControl>
                       <Input type="password" placeholder="Nouveau mot de passe" {...field} />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={editForm.control}
-                name="department"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{userRole === 'teacher' ? 'Département *' : 'Département'}</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ''}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un département" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Informatique">Informatique</SelectItem>
-                        <SelectItem value="Sciences">Sciences</SelectItem>
-                        <SelectItem value="Mathématiques">Mathématiques</SelectItem>
-                        <SelectItem value="Langues">Langues</SelectItem>
-                        <SelectItem value="Histoire-Géographie">Histoire-Géographie</SelectItem>
-                      </SelectContent>
-                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

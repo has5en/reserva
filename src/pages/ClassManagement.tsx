@@ -124,7 +124,10 @@ const ClassManagement = () => {
 
   const handleAddDepartment = async (data: DepartmentFormValues) => {
     try {
-      await addDepartment(data);
+      await addDepartment({
+        name: data.name,
+        description: data.description
+      });
       await fetchDepartments();
       toast({
         title: "Département ajouté",
