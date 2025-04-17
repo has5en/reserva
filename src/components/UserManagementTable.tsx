@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User, useAuth, UserRole } from '@/contexts/AuthContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -39,11 +38,14 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isClassDialogOpen, setIsClassDialogOpen] = useState(false);
+  const [isAddClassesDialogOpen, setIsAddClassesDialogOpen] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [userClasses, setUserClasses] = useState<TeacherClass[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<string>('');
   const [selectedClass, setSelectedClass] = useState<string>('');
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
+  const [allClasses, setAllClasses] = useState<Class[]>([]);
 
   const users = getUsers(userRole);
 
@@ -67,14 +69,20 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
     },
   });
 
-  const handleAddUser = (data: UserFormValues) => {
+  const handleAddUser = async (data: UserFormValues) => {
     try {
-      addUser({
+      const newUser = addUser({
         name: data.name,
         email: data.email,
         password: data.password,
         role: userRole,
       });
+
+      if (userRole === 'teacher' && selectedClasses.length > 0 && newUser) {
+        for (const classId of selectedClasses) {
+          await assignClassToTeacher(newUser.id, classId);
+        }
+      }
 
       toast({
         title: "Utilisateur ajouté",
@@ -82,6 +90,7 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
       });
 
       setIsAddDialogOpen(false);
+      setSelectedClasses([]);
       addForm.reset();
     } catch (error) {
       toast({
@@ -164,8 +173,15 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
     setIsClassDialogOpen(true);
   };
 
+  const openAddClassesDialog = () => {
+    setSelectedDepartment('');
+    setSelectedClasses([]);
+    setIsAddClassesDialogOpen(true);
+  };
+
   useEffect(() => {
     fetchDepartments();
+    fetchAllClasses();
   }, []);
 
   useEffect(() => {
@@ -190,6 +206,20 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
         variant: "destructive",
         title: "Erreur",
         description: "Impossible de charger les départements."
+      });
+    }
+  };
+
+  const fetchAllClasses = async () => {
+    try {
+      const data = await getClasses();
+      setAllClasses(data);
+    } catch (error) {
+      console.error('Failed to fetch all classes:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de charger les classes."
       });
     }
   };
@@ -263,13 +293,42 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
     }
   };
 
+  const handleToggleClassSelection = (classId: string) => {
+    setSelectedClasses(prev => {
+      if (prev.includes(classId)) {
+        return prev.filter(id => id !== classId);
+      } else {
+        return [...prev, classId];
+      }
+    });
+  };
+
+  const getClassesByDepartment = (departmentId: string) => {
+    return allClasses.filter(c => c.departmentId === departmentId);
+  };
+
+  const getDepartmentName = (departmentId: string) => {
+    const department = departments.find(d => d.id === departmentId);
+    return department?.name || '';
+  };
+
+  const getSelectedClassesCount = () => {
+    return selectedClasses.length;
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">
           {userRole === 'teacher' ? 'Gestion des enseignants' : 'Gestion des administrateurs'}
         </h2>
-        <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center">
+        <Button onClick={() => {
+          if (userRole === 'teacher') {
+            openAddClassesDialog();
+          } else {
+            setIsAddDialogOpen(true);
+          }
+        }} className="flex items-center">
           <UserPlus className="mr-2 h-4 w-4" />
           Ajouter {userRole === 'teacher' ? 'un enseignant' : 'un administrateur'}
         </Button>
@@ -334,59 +393,176 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
         </div>
       )}
 
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+      {userRole !== 'teacher' && (
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>
+                Ajouter un administrateur
+              </DialogTitle>
+            </DialogHeader>
+            <Form {...addForm}>
+              <form onSubmit={addForm.handleSubmit(handleAddUser)} className="space-y-4">
+                <FormField
+                  control={addForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nom</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nom complet" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={addForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="email@exemple.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={addForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mot de passe</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Mot de passe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="submit">Ajouter</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      <Dialog open={isAddClassesDialogOpen} onOpenChange={setIsAddClassesDialogOpen}>
+        <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
             <DialogTitle>
-              Ajouter {userRole === 'teacher' ? 'un enseignant' : 'un administrateur'}
+              Ajouter un enseignant avec ses classes
             </DialogTitle>
           </DialogHeader>
-          <Form {...addForm}>
-            <form onSubmit={addForm.handleSubmit(handleAddUser)} className="space-y-4">
-              <FormField
-                control={addForm.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nom</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nom complet" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <Form {...addForm}>
+                <form id="addTeacherForm" onSubmit={addForm.handleSubmit(handleAddUser)} className="space-y-4">
+                  <FormField
+                    control={addForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nom</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nom complet" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={addForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="email@exemple.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={addForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mot de passe</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="Mot de passe" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </form>
+              </Form>
+            </div>
+
+            <div className="space-y-4 border-l pl-4">
+              <div>
+                <h3 className="text-lg font-medium mb-2">Sélectionner des classes</h3>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Classes sélectionnées: {getSelectedClassesCount()}
+                </p>
+                <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filtrer par département" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="h-[300px] overflow-y-auto border rounded-md p-2">
+                {selectedDepartment ? (
+                  getClassesByDepartment(selectedDepartment).length > 0 ? (
+                    <div className="space-y-2">
+                      {getClassesByDepartment(selectedDepartment).map((cls) => (
+                        <div key={cls.id} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id={`class-${cls.id}`}
+                            checked={selectedClasses.includes(cls.id)}
+                            onChange={() => handleToggleClassSelection(cls.id)}
+                            className="mr-2"
+                          />
+                          <label htmlFor={`class-${cls.id}`} className="text-sm">
+                            {cls.name} ({cls.studentCount} étudiants)
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground p-2">
+                      Aucune classe dans ce département.
+                    </p>
+                  )
+                ) : (
+                  <p className="text-sm text-muted-foreground p-2">
+                    Veuillez sélectionner un département pour voir les classes.
+                  </p>
                 )}
-              />
-              <FormField
-                control={addForm.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="email@exemple.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={addForm.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mot de passe</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="Mot de passe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <DialogFooter>
-                <Button type="submit">Ajouter</Button>
-              </DialogFooter>
-            </form>
-          </Form>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddClassesDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button type="submit" form="addTeacherForm">
+              Ajouter l'enseignant
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

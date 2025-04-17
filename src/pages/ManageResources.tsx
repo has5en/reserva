@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ResourceManagementTables } from '@/components/ResourceManagementTables';
+import { ResourceManagementTable } from '@/components/ResourceManagementTables';
 import { ResourceUpdatesTable } from '@/components/ResourceUpdatesTable';
 import { getRooms, getEquipment, getResourceUpdates } from '@/services/dataService';
 import { Room, Equipment, ResourceUpdate } from '@/data/models';
@@ -108,7 +108,7 @@ const ManageResources = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <ResourceManagementTables 
+            <ResourceManagementTable 
               type="room" 
               items={rooms} 
               onUpdate={fetchRooms}
@@ -122,7 +122,7 @@ const ManageResources = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <ResourceManagementTables 
+            <ResourceManagementTable 
               type="equipment" 
               items={equipment} 
               onUpdate={fetchEquipment}
@@ -136,7 +136,7 @@ const ManageResources = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <ResourceUpdatesTable updates={updates} />
+            <ResourceUpdatesTable resourceUpdates={updates} />
           )}
         </TabsContent>
       </Tabs>
