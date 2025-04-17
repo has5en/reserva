@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { User, useAuth, UserRole } from '@/contexts/AuthContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -78,6 +79,7 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
         role: userRole,
       });
 
+      // Fix error TS1345 by checking if newUser exists before trying to use it
       if (userRole === 'teacher' && selectedClasses.length > 0 && newUser) {
         for (const classId of selectedClasses) {
           await assignClassToTeacher(newUser.id, classId);
