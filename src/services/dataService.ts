@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { Room, Equipment, Request, ResourceUpdate, Department, Class, TeacherClass, Notification } from '@/data/models';
+import { Room, Equipment, Request, ResourceUpdate, Department, Class, TeacherClass, Notification, RoomType } from '@/data/models';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,6 +28,53 @@ export const getDepartments = async (): Promise<Department[]> => {
   } catch (error) {
     console.error('Error fetching departments:', error);
     return [];
+  }
+};
+
+export const addDepartment = async (department: Omit<Department, 'id' | 'created_at' | 'updated_at'>): Promise<Department | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('departments')
+      .insert(department)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error adding department:', error);
+    throw error;
+  }
+};
+
+export const updateDepartment = async (department: Partial<Department> & { id: string }): Promise<Department | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('departments')
+      .update(department)
+      .eq('id', department.id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error updating department:', error);
+    throw error;
+  }
+};
+
+export const deleteDepartment = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('departments')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting department:', error);
+    throw error;
   }
 };
 
@@ -87,6 +133,85 @@ export const getClassesByDepartment = async (departmentId: string): Promise<Clas
   } catch (error) {
     console.error('Error fetching classes by department:', error);
     return [];
+  }
+};
+
+export const addClass = async (cls: Omit<Class, 'id' | 'created_at' | 'updated_at' | 'department'>): Promise<Class | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('classes')
+      .insert({
+        name: cls.name,
+        department_id: cls.departmentId,
+        student_count: cls.studentCount,
+        unit: cls.unit
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      name: data.name,
+      studentCount: data.student_count || 0,
+      departmentId: data.department_id,
+      unit: data.unit || "",
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
+  } catch (error) {
+    console.error('Error adding class:', error);
+    throw error;
+  }
+};
+
+export const updateClass = async (cls: Partial<Class> & { id: string }): Promise<Class | null> => {
+  try {
+    const updateData: any = {
+      id: cls.id
+    };
+    
+    if (cls.name !== undefined) updateData.name = cls.name;
+    if (cls.departmentId !== undefined) updateData.department_id = cls.departmentId;
+    if (cls.studentCount !== undefined) updateData.student_count = cls.studentCount;
+    if (cls.unit !== undefined) updateData.unit = cls.unit;
+    
+    const { data, error } = await supabase
+      .from('classes')
+      .update(updateData)
+      .eq('id', cls.id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      name: data.name,
+      studentCount: data.student_count || 0,
+      departmentId: data.department_id,
+      unit: data.unit || "",
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
+  } catch (error) {
+    console.error('Error updating class:', error);
+    throw error;
+  }
+};
+
+export const deleteClass = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('classes')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting class:', error);
+    throw error;
   }
 };
 
@@ -447,38 +572,120 @@ export const deleteEquipment = async (id: string): Promise<void> => {
 };
 
 // Requests
-export const getRequests = async (): Promise<Request[]> => {
+export const getRequest = async (id: string): Promise<Request | null> => {
   try {
-    const { data, error } = await supabase.from('requests').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('reservations')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
     if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching requests:', error);
-    return [];
-  }
-};
-
-export const getRequestById = async (id: string): Promise<Request | null> => {
-  try {
-    const { data, error } = await supabase.from('requests').select('*').eq('id', id).single();
-    if (error) throw error;
-    return data;
+    if (!data) return null;
+    
+    return {
+      id: data.id,
+      type: data.type,
+      status: data.status,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+      userId: data.user_id,
+      userName: data.user_name || '',
+      roomId: data.room_id,
+      roomName: data.room_name,
+      equipmentId: data.equipment_id,
+      equipmentName: data.equipment_name,
+      equipmentQuantity: data.equipment_quantity,
+      classId: data.class_id || '',
+      className: data.class_name || '',
+      startTime: data.start_time,
+      endTime: data.end_time,
+      date: data.date,
+      notes: data.notes,
+      requires_commander_approval: data.requires_commander_approval,
+      adminApproval: data.admin_approval,
+      supervisorApproval: data.supervisor_approval,
+      returnInfo: data.return_info
+    };
   } catch (error) {
     console.error(`Error fetching request ${id}:`, error);
     return null;
   }
 };
 
+export const getRequests = async (): Promise<Request[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('reservations')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    return data.map(req => ({
+      id: req.id,
+      type: req.type,
+      status: req.status,
+      createdAt: req.created_at,
+      updatedAt: req.updated_at,
+      userId: req.user_id,
+      userName: req.user_name || '',
+      roomId: req.room_id,
+      roomName: req.room_name,
+      equipmentId: req.equipment_id,
+      equipmentName: req.equipment_name,
+      equipmentQuantity: req.equipment_quantity,
+      classId: req.class_id || '',
+      className: req.class_name || '',
+      startTime: req.start_time,
+      endTime: req.end_time,
+      date: req.date,
+      notes: req.notes,
+      requires_commander_approval: req.requires_commander_approval,
+      adminApproval: req.admin_approval,
+      supervisorApproval: req.supervisor_approval,
+      returnInfo: req.return_info
+    })) || [];
+  } catch (error) {
+    console.error('Error fetching requests:', error);
+    return [];
+  }
+};
+
 export const getRequestsByUserId = async (userId: string): Promise<Request[]> => {
   try {
     const { data, error } = await supabase
-      .from('requests')
+      .from('reservations')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    
+    return data.map(req => ({
+      id: req.id,
+      type: req.type,
+      status: req.status,
+      createdAt: req.created_at,
+      updatedAt: req.updated_at,
+      userId: req.user_id,
+      userName: req.user_name || '',
+      roomId: req.room_id,
+      roomName: req.room_name,
+      equipmentId: req.equipment_id,
+      equipmentName: req.equipment_name,
+      equipmentQuantity: req.equipment_quantity,
+      classId: req.class_id || '',
+      className: req.class_name || '',
+      startTime: req.start_time,
+      endTime: req.end_time,
+      date: req.date,
+      notes: req.notes,
+      requires_commander_approval: req.requires_commander_approval,
+      adminApproval: req.admin_approval,
+      supervisorApproval: req.supervisor_approval,
+      returnInfo: req.return_info
+    })) || [];
   } catch (error) {
     console.error(`Error fetching requests for user ${userId}:`, error);
     return [];
@@ -488,13 +695,37 @@ export const getRequestsByUserId = async (userId: string): Promise<Request[]> =>
 export const getRequestsByStatus = async (status: string): Promise<Request[]> => {
   try {
     const { data, error } = await supabase
-      .from('requests')
+      .from('reservations')
       .select('*')
       .eq('status', status)
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    
+    return data.map(req => ({
+      id: req.id,
+      type: req.type,
+      status: req.status,
+      createdAt: req.created_at,
+      updatedAt: req.updated_at,
+      userId: req.user_id,
+      userName: req.user_name || '',
+      roomId: req.room_id,
+      roomName: req.room_name,
+      equipmentId: req.equipment_id,
+      equipmentName: req.equipment_name,
+      equipmentQuantity: req.equipment_quantity,
+      classId: req.class_id || '',
+      className: req.class_name || '',
+      startTime: req.start_time,
+      endTime: req.end_time,
+      date: req.date,
+      notes: req.notes,
+      requires_commander_approval: req.requires_commander_approval,
+      adminApproval: req.admin_approval,
+      supervisorApproval: req.supervisor_approval,
+      returnInfo: req.return_info
+    })) || [];
   } catch (error) {
     console.error(`Error fetching requests with status ${status}:`, error);
     return [];
