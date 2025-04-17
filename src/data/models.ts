@@ -1,3 +1,4 @@
+
 export type RequestStatus = 'pending' | 'admin_approved' | 'approved' | 'rejected' | 'returned';
 export type RequestType = 'room' | 'equipment' | 'printing';
 export type RoomType = 'classroom' | 'training_room' | 'weapons_room' | 'tactical_room';
@@ -16,12 +17,27 @@ export interface Room {
   building?: string;
 }
 
+export interface Department {
+  id: string;
+  name: string;
+  description?: string;
+}
+
 export interface Class {
   id: string;
   name: string;
   studentCount: number;
   department: string;
+  departmentId: string;
   unit?: string;
+}
+
+export interface TeacherClass {
+  id: string;
+  teacherId: string;
+  classId: string;
+  className?: string;
+  departmentName?: string;
 }
 
 export interface Equipment {

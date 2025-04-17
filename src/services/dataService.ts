@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Room, Equipment, Request, RequestStatus, Notification, ResourceUpdate, Class } from '@/data/models';
+import { Room, Equipment, Request, RequestStatus, Notification, ResourceUpdate, Class, Department, TeacherClass } from '@/data/models';
 
 // Format date for display
 export const formatDate = (dateString: string): string => {
@@ -21,6 +21,97 @@ export const formatDateTime = (dateTimeString: string): string => {
     hour: '2-digit',
     minute: '2-digit'
   }).format(date);
+};
+
+// Department services
+export const getDepartments = async (): Promise<Department[]> => {
+  const { data, error } = await supabase
+    .from('departments')
+    .select('*');
+  
+  if (error) throw error;
+  
+  return data || [];
+};
+
+// Class services
+export const getClasses = async (): Promise<Class[]> => {
+  const { data, error } = await supabase
+    .from('classes')
+    .select(`
+      *,
+      departments:department_id (name)
+    `);
+  
+  if (error) throw error;
+  
+  return (data || []).map(classData => ({
+    id: classData.id,
+    name: classData.name,
+    studentCount: classData.student_count,
+    departmentId: classData.department_id,
+    department: classData.departments?.name || '',
+    unit: classData.unit
+  }));
+};
+
+export const getClassesByDepartment = async (departmentId: string): Promise<Class[]> => {
+  const { data, error } = await supabase
+    .from('classes')
+    .select(`
+      *,
+      departments:department_id (name)
+    `)
+    .eq('department_id', departmentId);
+  
+  if (error) throw error;
+  
+  return (data || []).map(classData => ({
+    id: classData.id,
+    name: classData.name,
+    studentCount: classData.student_count,
+    departmentId: classData.department_id,
+    department: classData.departments?.name || '',
+    unit: classData.unit
+  }));
+};
+
+// Teacher-classes services
+export const getTeacherClasses = async (teacherId: string): Promise<TeacherClass[]> => {
+  const { data, error } = await supabase
+    .from('teacher_classes')
+    .select(`
+      *,
+      classes:class_id (*, departments:department_id(name))
+    `)
+    .eq('teacher_id', teacherId);
+  
+  if (error) throw error;
+  
+  return (data || []).map(tc => ({
+    id: tc.id,
+    teacherId: tc.teacher_id,
+    classId: tc.class_id,
+    className: tc.classes?.name,
+    departmentName: tc.classes?.departments?.name
+  }));
+};
+
+export const assignClassToTeacher = async (teacherId: string, classId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('teacher_classes')
+    .insert([{ teacher_id: teacherId, class_id: classId }]);
+  
+  if (error) throw error;
+};
+
+export const removeClassFromTeacher = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('teacher_classes')
+    .delete()
+    .eq('id', id);
+  
+  if (error) throw error;
 };
 
 // Room services
@@ -195,7 +286,8 @@ export const getEquipment = async (): Promise<Equipment[]> => {
     availableQuantity: item.available_quantity,
     location: item.location || '',
     created_at: item.created_at,
-    updated_at: item.updated_at
+    updated_at: item.updated_at,
+		requires_clearance: item.requires_clearance
   }));
 };
 
@@ -221,7 +313,8 @@ export const getEquipmentById = async (id: string): Promise<Equipment | undefine
     availableQuantity: data.available_quantity,
     location: data.location || '',
     created_at: data.created_at,
-    updated_at: data.updated_at
+    updated_at: data.updated_at,
+		requires_clearance: data.requires_clearance
   };
 };
 
@@ -244,7 +337,8 @@ export const getAvailableEquipment = async (): Promise<Equipment[]> => {
     availableQuantity: item.available_quantity,
     location: item.location || '',
     created_at: item.created_at,
-    updated_at: item.updated_at
+    updated_at: item.updated_at,
+		requires_clearance: item.requires_clearance
   }));
 };
 
@@ -282,7 +376,8 @@ export const updateEquipment = async (id: string, updates: Partial<Equipment>): 
     availableQuantity: data.available_quantity,
     location: data.location || '',
     created_at: data.created_at,
-    updated_at: data.updated_at
+    updated_at: data.updated_at,
+		requires_clearance: data.requires_clearance
   };
 };
 
@@ -294,7 +389,8 @@ export const addEquipment = async (equipment: Omit<Equipment, 'id' | 'created_at
     category: equipment.category,
     total_quantity: equipment.totalQuantity,
     available_quantity: equipment.availableQuantity,
-    location: equipment.location
+    location: equipment.location,
+		requires_clearance: equipment.requires_clearance
   };
   
   const { data, error } = await supabase
@@ -316,7 +412,8 @@ export const addEquipment = async (equipment: Omit<Equipment, 'id' | 'created_at
     availableQuantity: data.available_quantity,
     location: data.location || '',
     created_at: data.created_at,
-    updated_at: data.updated_at
+    updated_at: data.updated_at,
+		requires_clearance: data.requires_clearance
   };
 };
 
@@ -395,7 +492,8 @@ const transformReservationToRequest = (reservation: any): Request => {
     date: new Date(reservation.start_time).toISOString().split('T')[0],
     notes: reservation.purpose,
     createdAt: reservation.created_at,
-    updatedAt: reservation.updated_at
+    updatedAt: reservation.updated_at,
+    requires_commander_approval: reservation.requires_commander_approval
   };
 };
 
@@ -453,7 +551,7 @@ export const returnEquipment = async (requestId: string, condition: string): Pro
   ]);
 };
 
-export const getAvailableRoomsByType = async (type: string): Promise<Room[]> => {
+export const getAvailableRoomsByType = async (type: RoomType): Promise<Room[]> => {
   const { data, error } = await supabase
     .from('rooms')
     .select('*')
@@ -471,32 +569,38 @@ export const getAvailableRoomsByType = async (type: string): Promise<Room[]> => 
     building: room.building || '',
     equipment: room.equipment || [],
     available: room.is_available,
-    description: '',
-    created_at: room.created_at,
-    updated_at: room.updated_at
+    description: ''
   }));
 };
 
 // Mock data for classes with military academy specific fields
-export const getClasses = async (): Promise<Class[]> => {
+export const getClassesMock = async (): Promise<Class[]> => {
   return [
-    { id: 'class1', name: 'Promotion Alpha', studentCount: 25, department: 'Infantry', unit: '1st Battalion' },
-    { id: 'class2', name: 'Promotion Bravo', studentCount: 30, department: 'Artillery', unit: '2nd Battalion' },
-    { id: 'class3', name: 'Promotion Charlie', studentCount: 20, department: 'Engineering', unit: '3rd Battalion' },
-    { id: 'class4', name: 'Promotion Delta', studentCount: 28, department: 'Signal Corps', unit: '4th Battalion' },
-    { id: 'class5', name: 'Promotion Echo', studentCount: 22, department: 'Medical Corps', unit: '5th Battalion' }
+    { id: 'class1', name: 'Promotion Alpha', studentCount: 25, department: 'Infanterie', departmentId: 'dept1', unit: '1st Battalion' },
+    { id: 'class2', name: 'Promotion Bravo', studentCount: 30, department: 'Artillerie', departmentId: 'dept2', unit: '2nd Battalion' },
+    { id: 'class3', name: 'Promotion Charlie', studentCount: 20, department: 'Génie', departmentId: 'dept3', unit: '3rd Battalion' },
+    { id: 'class4', name: 'Promotion Delta', studentCount: 28, department: 'Transmissions', departmentId: 'dept4', unit: '4th Battalion' },
+    { id: 'class5', name: 'Promotion Echo', studentCount: 22, department: 'Logistique', departmentId: 'dept5', unit: '5th Battalion' }
   ];
 };
 
 export const createRequest = async (request: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<Request> => {
   const isRoomRequest = request.type === 'room';
   
+  // Convert the status from our app's enum to the database enum
+  let dbStatus: string;
+  if (request.status === 'admin_approved') {
+    dbStatus = 'pending'; // Map to database enum value
+  } else {
+    dbStatus = request.status; // Other statuses match
+  }
+  
   const reservationData = {
     user_id: request.userId,
     room_id: isRoomRequest ? request.roomId : null,
     equipment_id: !isRoomRequest ? request.equipmentId : null,
     equipment_quantity: !isRoomRequest ? request.equipmentQuantity : null,
-    status: request.status || 'pending',
+    status: dbStatus,
     start_time: request.startTime,
     end_time: request.endTime,
     purpose: request.notes,
@@ -554,4 +658,35 @@ export const createResourceUpdate = async (update: Omit<ResourceUpdate, 'id' | '
 export const getResourceUpdates = async (): Promise<ResourceUpdate[]> => {
   // Mock implementation until a resource_updates table is added
   return [];
+};
+
+// This is just to update the getAvailableRoomsByType function to match what's used in RoomReservation
+// Temporary function to check availability with date/time parameters
+export const checkRoomAvailability = async (roomId: string, date: string, startTime: string, endTime: string): Promise<boolean> => {
+  // Will be implemented with real reservation checking later
+  return true;
+};
+
+// Get classes for a specific teacher
+export const getTeacherClassesForReservation = async (teacherId: string): Promise<Class[]> => {
+  const { data, error } = await supabase
+    .from('teacher_classes')
+    .select(`
+      classes:class_id (
+        *,
+        departments:department_id (name)
+      )
+    `)
+    .eq('teacher_id', teacherId);
+  
+  if (error) throw error;
+  
+  return (data || []).map(item => ({
+    id: item.classes.id,
+    name: item.classes.name,
+    studentCount: item.classes.student_count,
+    departmentId: item.classes.department_id,
+    department: item.classes.departments.name,
+    unit: item.classes.unit
+  }));
 };

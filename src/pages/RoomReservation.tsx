@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Room, Class, RoomType } from '@/data/models';
-import { getAvailableRoomsByType, getClasses, createRequest } from '@/services/dataService';
+import { getAvailableRoomsByType, getTeacherClassesForReservation, createRequest } from '@/services/dataService';
 import { Building, Calendar, Clock, Users, BookOpen, Computer, Beaker } from 'lucide-react';
 
 const RoomReservation = () => {
@@ -31,7 +31,7 @@ const RoomReservation = () => {
   const [endTime, setEndTime] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [signature, setSignature] = useState<string | null>(null);
-  const [roomType, setRoomType] = useState<string>('computer_lab');
+  const [roomType, setRoomType] = useState<RoomType>('classroom');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -39,16 +39,11 @@ const RoomReservation = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [roomsData, classesData] = await Promise.all([
-          getAvailableRoomsByType(date, startTime, endTime, roomType as RoomType),
-          getClasses()
-        ]);
-        
+        const roomsData = await getAvailableRoomsByType(roomType);
         setRooms(roomsData);
         
-        if (currentUser?.role === 'teacher' && currentUser?.department) {
-          setClasses(classesData.filter(cls => cls.department === currentUser.department));
-        } else {
+        if (currentUser?.id) {
+          const classesData = await getTeacherClassesForReservation(currentUser.id);
           setClasses(classesData);
         }
       } catch (error) {
@@ -64,7 +59,7 @@ const RoomReservation = () => {
     };
 
     fetchData();
-  }, [currentUser, date, startTime, endTime, roomType]);
+  }, [currentUser, roomType]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -145,13 +140,13 @@ const RoomReservation = () => {
 
   const getRoomTypeIcon = (type: RoomType) => {
     switch (type) {
-      case 'computer_lab':
-        return <Computer className="mr-2 h-5 w-5" />;
-      case 'science_lab':
-        return <Beaker className="mr-2 h-5 w-5" />;
       case 'classroom':
         return <BookOpen className="mr-2 h-5 w-5" />;
-      case 'meeting_room':
+      case 'training_room':
+        return <Computer className="mr-2 h-5 w-5" />;
+      case 'weapons_room':
+        return <Beaker className="mr-2 h-5 w-5" />;
+      case 'tactical_room':
         return <Users className="mr-2 h-5 w-5" />;
       default:
         return <Building className="mr-2 h-5 w-5" />;
@@ -224,7 +219,7 @@ const RoomReservation = () => {
                   <Label>Type d'espace</Label>
                   <RoomTypeSelector 
                     selectedType={roomType} 
-                    onChange={setRoomType} 
+                    onChange={(type) => setRoomType(type as RoomType)} 
                     className="mt-2"
                   />
                 </div>
@@ -289,11 +284,17 @@ const RoomReservation = () => {
                       <SelectValue placeholder="Sélectionner une classe" />
                     </SelectTrigger>
                     <SelectContent>
-                      {classes.map((cls) => (
-                        <SelectItem key={cls.id} value={cls.id}>
-                          {cls.name} ({cls.studentCount} étudiants)
+                      {classes.length === 0 ? (
+                        <SelectItem value="none" disabled>
+                          Aucune classe assignée
                         </SelectItem>
-                      ))}
+                      ) : (
+                        classes.map((cls) => (
+                          <SelectItem key={cls.id} value={cls.id}>
+                            {cls.name} ({cls.department})
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   {errors.class && <p className="text-sm text-red-500 mt-1">{errors.class}</p>}

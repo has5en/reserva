@@ -9,6 +9,68 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      classes: {
+        Row: {
+          created_at: string
+          department_id: string
+          id: string
+          name: string
+          student_count: number
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department_id: string
+          id?: string
+          name: string
+          student_count?: number
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string
+          id?: string
+          name?: string
+          student_count?: number
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classes_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departments: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       equipment: {
         Row: {
           available_quantity: number
@@ -56,6 +118,7 @@ export type Database = {
           full_name: string | null
           id: string
           rank: string | null
+          role: Database["public"]["Enums"]["user_role"]
           unit: string | null
           updated_at: string
         }
@@ -66,6 +129,7 @@ export type Database = {
           full_name?: string | null
           id: string
           rank?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
           unit?: string | null
           updated_at?: string
         }
@@ -76,6 +140,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           rank?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
           unit?: string | null
           updated_at?: string
         }
@@ -189,6 +254,35 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_classes: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          teacher_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          teacher_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_classes_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -206,6 +300,7 @@ export type Database = {
         | "training_room"
         | "weapons_room"
         | "tactical_room"
+      user_role: "admin" | "supervisor" | "teacher"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -328,6 +423,7 @@ export const Constants = {
         "weapons_room",
         "tactical_room",
       ],
+      user_role: ["admin", "supervisor", "teacher"],
     },
   },
 } as const
