@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User, useAuth, UserRole } from '@/contexts/AuthContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -7,196 +6,85 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from '@/components/ui/use-toast';
+import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Pencil, Trash2, UserPlus, BookOpen } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
-import { getDepartments, getClasses, assignClassToTeacher, getTeacherClasses, removeClassFromTeacher } from '@/services/dataService';
-import { Department, Class, TeacherClass } from '@/data/models';
+import { Pencil, Trash2, Plus, Check } from 'lucide-react';
+import { createUser, deleteUser, updateUser, getUsers, getTeacherClasses, assignClassToTeacher, removeClassFromTeacher, getClasses, getClassesByDepartment, getDepartments } from '@/services/dataService';
+import { Department, Class, TeacherClass } from '@/data/models'; 
 
-interface UserManagementTableProps {
-  userRole: UserRole;
-}
+const userFormSchema = z.object({
+  name: z.string().min(2, { message: 'Le nom doit contenir au moins 2 caractères' }),
+  email: z.string().email({ message: 'Adresse e-mail invalide' }),
+  password: z.string().min(6, { message: 'Le mot de passe doit contenir au moins 6 caractères' }),
+});
 
-const createUserFormSchema = (userRole: UserRole) => {
-  const baseSchema = {
-    name: z.string().min(2, { message: 'Le nom doit contenir au moins 2 caractères' }),
-    email: z.string().email({ message: 'Email invalide' }),
-    password: z.string().min(6, { message: 'Le mot de passe doit contenir au moins 6 caractères' }),
-  };
+type UserFormValues = z.infer<typeof userFormSchema>;
 
-  return z.object(baseSchema);
-};
-
-type UserFormValues = z.infer<ReturnType<typeof createUserFormSchema>>;
-
-const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
-  const { getUsers, addUser, updateUser, deleteUser, currentUser } = useAuth();
+const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
+  const { hasRole } = useAuth();
+  const [users, setUsers] = useState<User[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isClassDialogOpen, setIsClassDialogOpen] = useState(false);
-  const [isAddClassesDialogOpen, setIsAddClassesDialogOpen] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [userClasses, setUserClasses] = useState<TeacherClass[]>([]);
-  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
-  const [selectedClass, setSelectedClass] = useState<string>('');
+  const [availableClasses, setAvailableClasses] = useState<Class[]>([]);
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
-  const [allClasses, setAllClasses] = useState<Class[]>([]);
+  const [teacherClasses, setTeacherClasses] = useState<TeacherClass[]>([]);
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
 
-  const users = getUsers(userRole);
+  const canEdit = hasRole('admin') || hasRole('supervisor');
 
-  const formSchema = createUserFormSchema(userRole);
-
-  const addForm = useForm<UserFormValues>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<UserFormValues>({
+    resolver: zodResolver(userFormSchema),
     defaultValues: {
       name: '',
       email: '',
       password: '',
     },
   });
-
-  const editForm = useForm<UserFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-    },
-  });
-
-  const handleAddUser = async (data: UserFormValues) => {
-    try {
-      const newUser = addUser({
-        name: data.name,
-        email: data.email,
-        password: data.password,
-        role: userRole,
-      });
-
-      // Fix error TS1345 by checking if newUser exists before trying to use it
-      if (userRole === 'teacher' && selectedClasses.length > 0 && newUser) {
-        for (const classId of selectedClasses) {
-          await assignClassToTeacher(newUser.id, classId);
-        }
-      }
-
-      toast({
-        title: "Utilisateur ajouté",
-        description: `${data.name} a été ajouté avec succès.`,
-      });
-
-      setIsAddDialogOpen(false);
-      setSelectedClasses([]);
-      addForm.reset();
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur s'est produite lors de l'ajout de l'utilisateur.",
-      });
-    }
-  };
-
-  const handleEditUser = (data: UserFormValues) => {
-    try {
-      if (selectedUser) {
-        updateUser(selectedUser.id, {
-          name: data.name,
-          email: data.email,
-          password: data.password || undefined,
-          role: userRole,
-        });
-
-        toast({
-          title: "Utilisateur mis à jour",
-          description: `${data.name} a été mis à jour avec succès.`,
-        });
-
-        setIsEditDialogOpen(false);
-        setSelectedUser(null);
-        editForm.reset();
-      }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur s'est produite lors de la mise à jour de l'utilisateur.",
-      });
-    }
-  };
-
-  const handleDeleteUser = () => {
-    try {
-      if (selectedUser) {
-        deleteUser(selectedUser.id);
-
-        toast({
-          title: "Utilisateur supprimé",
-          description: `${selectedUser.name} a été supprimé avec succès.`,
-        });
-
-        setIsDeleteDialogOpen(false);
-        setSelectedUser(null);
-      }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur s'est produite lors de la suppression de l'utilisateur.",
-      });
-    }
-  };
-
-  const openEditDialog = (user: User) => {
-    setSelectedUser(user);
-    editForm.reset({
-      name: user.name,
-      email: user.email,
-      password: '',
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const openDeleteDialog = (user: User) => {
-    setSelectedUser(user);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const openClassDialog = (user: User) => {
-    setSelectedUser(user);
-    setSelectedDepartment('');
-    setSelectedClass('');
-    setIsClassDialogOpen(true);
-  };
-
-  const openAddClassesDialog = () => {
-    setSelectedDepartment('');
-    setSelectedClasses([]);
-    setIsAddClassesDialogOpen(true);
-  };
 
   useEffect(() => {
+    fetchUsers();
     fetchDepartments();
-    fetchAllClasses();
   }, []);
+
+  useEffect(() => {
+    if (userRole === 'teacher') {
+      fetchClasses();
+    }
+  }, [userRole]);
+
+  useEffect(() => {
+    if (selectedUser && userRole === 'teacher') {
+      fetchTeacherClasses(selectedUser.id);
+    }
+  }, [selectedUser, userRole]);
 
   useEffect(() => {
     if (selectedDepartment) {
       fetchClassesByDepartment(selectedDepartment);
+    } else {
+      fetchClasses();
     }
   }, [selectedDepartment]);
 
-  useEffect(() => {
-    if (selectedUser && isClassDialogOpen) {
-      fetchUserClasses(selectedUser.id);
+  const fetchUsers = async () => {
+    try {
+      const data = await getUsers(userRole);
+      setUsers(data);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de charger les utilisateurs."
+      });
     }
-  }, [selectedUser, isClassDialogOpen]);
+  };
 
   const fetchDepartments = async () => {
     try {
@@ -212,24 +100,10 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
     }
   };
 
-  const fetchAllClasses = async () => {
+  const fetchClasses = async () => {
     try {
       const data = await getClasses();
-      setAllClasses(data);
-    } catch (error) {
-      console.error('Failed to fetch all classes:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de charger les classes."
-      });
-    }
-  };
-
-  const fetchClassesByDepartment = async (departmentId: string) => {
-    try {
-      const data = await getClasses();
-      setClasses(data.filter(c => c.departmentId === departmentId));
+      setAvailableClasses(data);
     } catch (error) {
       console.error('Failed to fetch classes:', error);
       toast({
@@ -240,62 +114,157 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
     }
   };
 
-  const fetchUserClasses = async (userId: string) => {
+  const fetchClassesByDepartment = async (departmentId: string) => {
     try {
-      const data = await getTeacherClasses(userId);
-      setUserClasses(data);
+      const data = await getClassesByDepartment(departmentId);
+      setAvailableClasses(data);
     } catch (error) {
-      console.error('Failed to fetch user classes:', error);
+      console.error('Failed to fetch classes by department:', error);
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible de charger les classes de l'utilisateur."
+        description: "Impossible de charger les classes pour ce département."
       });
     }
   };
 
-  const handleAssignClass = async () => {
-    if (!selectedUser || !selectedClass) return;
-
+  const fetchTeacherClasses = async (teacherId: string) => {
     try {
-      await assignClassToTeacher(selectedUser.id, selectedClass);
-      await fetchUserClasses(selectedUser.id);
-      setSelectedClass('');
-      toast({
-        title: "Classe assignée",
-        description: "La classe a été assignée avec succès."
-      });
+      const data = await getTeacherClasses(teacherId);
+      setTeacherClasses(data);
+      setSelectedClasses(data.map(tc => tc.classId));
     } catch (error) {
-      console.error('Failed to assign class:', error);
+      console.error('Failed to fetch teacher classes:', error);
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible d'assigner la classe à l'enseignant."
+        description: "Impossible de charger les classes de l'enseignant."
       });
     }
   };
 
-  const handleRemoveClass = async (teacherClassId: string) => {
+  const handleCreateUser = async (data: UserFormValues) => {
+    try {
+      const newUser = await createUser({
+        email: data.email,
+        password: data.password,
+        name: data.name,
+        role: userRole,
+      });
+
+      // Vérifier que newUser existe avant de continuer
+      if (userRole === 'teacher' && selectedClasses.length > 0 && newUser?.id) {
+        // Si c'est un enseignant, associer les classes sélectionnées
+        for (const classId of selectedClasses) {
+          await assignClassToTeacher(newUser.id, classId);
+        }
+      }
+
+      // Actualiser la liste des utilisateurs
+      await fetchUsers();
+
+      toast({
+        title: "Utilisateur créé",
+        description: `${data.name} a été ajouté avec succès.`,
+      });
+
+      setIsAddDialogOpen(false);
+      form.reset();
+      setSelectedDepartment('');
+      setSelectedClasses([]);
+      setAvailableClasses([]);
+    } catch (error) {
+      console.error("Erreur lors de la création de l'utilisateur:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur s'est produite lors de la création de l'utilisateur.",
+      });
+    }
+  };
+
+  const handleUpdateUser = async (data: UserFormValues) => {
     if (!selectedUser) return;
 
     try {
-      await removeClassFromTeacher(teacherClassId);
-      await fetchUserClasses(selectedUser.id);
-      toast({
-        title: "Classe retirée",
-        description: "La classe a été retirée avec succès."
+      await updateUser({
+        id: selectedUser.id,
+        email: data.email,
+        name: data.name,
+        role: userRole,
       });
+
+      if (userRole === 'teacher') {
+        // Supprimer les anciennes associations de classes
+        for (const tc of teacherClasses) {
+          await removeClassFromTeacher(selectedUser.id, tc.classId);
+        }
+
+        // Ajouter les nouvelles associations de classes
+        for (const classId of selectedClasses) {
+          await assignClassToTeacher(selectedUser.id, classId);
+        }
+      }
+
+      await fetchUsers();
+      toast({
+        title: "Utilisateur mis à jour",
+        description: `${data.name} a été mis à jour avec succès.`,
+      });
+      setIsEditDialogOpen(false);
+      setSelectedUser(null);
+      form.reset();
+      setSelectedDepartment('');
+      setSelectedClasses([]);
+      setAvailableClasses([]);
     } catch (error) {
-      console.error('Failed to remove class:', error);
+      console.error("Erreur lors de la mise à jour de l'utilisateur:", error);
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible de retirer la classe de l'enseignant."
+        description: "Une erreur s'est produite lors de la mise à jour de l'utilisateur.",
       });
     }
   };
 
-  const handleToggleClassSelection = (classId: string) => {
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+
+    try {
+      await deleteUser(selectedUser.id);
+      await fetchUsers();
+      toast({
+        title: "Utilisateur supprimé",
+        description: `${selectedUser.name} a été supprimé avec succès.`,
+      });
+      setIsDeleteDialogOpen(false);
+      setSelectedUser(null);
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'utilisateur:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur s'est produite lors de la suppression de l'utilisateur.",
+      });
+    }
+  };
+
+  const openEditDialog = (user: User) => {
+    setSelectedUser(user);
+    form.reset({
+      name: user.name,
+      email: user.email,
+      password: '', // Le mot de passe ne doit pas être pré-rempli
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (user: User) => {
+    setSelectedUser(user);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleClassSelectionChange = (classId: string) => {
     setSelectedClasses(prev => {
       if (prev.includes(classId)) {
         return prev.filter(id => id !== classId);
@@ -305,41 +274,22 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
     });
   };
 
-  const getClassesByDepartment = (departmentId: string) => {
-    return allClasses.filter(c => c.departmentId === departmentId);
-  };
-
-  const getDepartmentName = (departmentId: string) => {
-    const department = departments.find(d => d.id === departmentId);
-    return department?.name || '';
-  };
-
-  const getSelectedClassesCount = () => {
-    return selectedClasses.length;
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">
-          {userRole === 'teacher' ? 'Gestion des enseignants' : 'Gestion des administrateurs'}
-        </h2>
-        <Button onClick={() => {
-          if (userRole === 'teacher') {
-            openAddClassesDialog();
-          } else {
-            setIsAddDialogOpen(true);
-          }
-        }} className="flex items-center">
-          <UserPlus className="mr-2 h-4 w-4" />
-          Ajouter {userRole === 'teacher' ? 'un enseignant' : 'un administrateur'}
-        </Button>
+        <h2 className="text-xl font-semibold">Liste des {userRole === 'teacher' ? 'enseignants' : 'administrateurs'}</h2>
+        {canEdit && (
+          <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center">
+            <Plus className="mr-2 h-4 w-4" />
+            Ajouter un utilisateur
+          </Button>
+        )}
       </div>
 
       {users.length === 0 ? (
         <div className="text-center py-8 bg-muted rounded-md">
           <p className="text-muted-foreground">
-            Aucun {userRole === 'teacher' ? 'enseignant' : 'administrateur'} trouvé.
+            Aucun utilisateur trouvé.
           </p>
         </div>
       ) : (
@@ -359,33 +309,25 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
                   <TableCell>{user.email}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      {userRole === 'teacher' && (
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => openClassDialog(user)}
-                          title="Gérer les classes"
-                        >
-                          <BookOpen className="h-4 w-4" />
-                        </Button>
+                      {canEdit && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => openEditDialog(user)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="text-destructive hover:bg-destructive/10"
+                            onClick={() => openDeleteDialog(user)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
                       )}
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => openEditDialog(user)}
-                        disabled={user.id === currentUser?.id}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="text-destructive hover:bg-destructive/10"
-                        onClick={() => openDeleteDialog(user)}
-                        disabled={user.id === currentUser?.id}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -395,227 +337,204 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
         </div>
       )}
 
-      {userRole !== 'teacher' && (
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>
-                Ajouter un administrateur
-              </DialogTitle>
-            </DialogHeader>
-            <Form {...addForm}>
-              <form onSubmit={addForm.handleSubmit(handleAddUser)} className="space-y-4">
-                <FormField
-                  control={addForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nom</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Nom complet" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={addForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="email@exemple.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={addForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mot de passe</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="Mot de passe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <DialogFooter>
-                  <Button type="submit">Ajouter</Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      <Dialog open={isAddClassesDialogOpen} onOpenChange={setIsAddClassesDialogOpen}>
-        <DialogContent className="sm:max-w-[700px]">
-          <DialogHeader>
-            <DialogTitle>
-              Ajouter un enseignant avec ses classes
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-4">
-              <Form {...addForm}>
-                <form id="addTeacherForm" onSubmit={addForm.handleSubmit(handleAddUser)} className="space-y-4">
-                  <FormField
-                    control={addForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nom</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nom complet" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={addForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="email@exemple.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={addForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Mot de passe</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="Mot de passe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </form>
-              </Form>
-            </div>
-
-            <div className="space-y-4 border-l pl-4">
-              <div>
-                <h3 className="text-lg font-medium mb-2">Sélectionner des classes</h3>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Classes sélectionnées: {getSelectedClassesCount()}
-                </p>
-                <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filtrer par département" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="h-[300px] overflow-y-auto border rounded-md p-2">
-                {selectedDepartment ? (
-                  getClassesByDepartment(selectedDepartment).length > 0 ? (
-                    <div className="space-y-2">
-                      {getClassesByDepartment(selectedDepartment).map((cls) => (
-                        <div key={cls.id} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id={`class-${cls.id}`}
-                            checked={selectedClasses.includes(cls.id)}
-                            onChange={() => handleToggleClassSelection(cls.id)}
-                            className="mr-2"
-                          />
-                          <label htmlFor={`class-${cls.id}`} className="text-sm">
-                            {cls.name} ({cls.studentCount} étudiants)
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground p-2">
-                      Aucune classe dans ce département.
-                    </p>
-                  )
-                ) : (
-                  <p className="text-sm text-muted-foreground p-2">
-                    Veuillez sélectionner un département pour voir les classes.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddClassesDialogOpen(false)}>
-              Annuler
-            </Button>
-            <Button type="submit" form="addTeacherForm">
-              Ajouter l'enseignant
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      {/* Dialog pour ajouter un utilisateur */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>
-              Modifier {userRole === 'teacher' ? 'un enseignant' : 'un administrateur'}
-            </DialogTitle>
+            <DialogTitle>Ajouter un utilisateur</DialogTitle>
           </DialogHeader>
-          <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(handleEditUser)} className="space-y-4">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleCreateUser)} className="space-y-4">
               <FormField
-                control={editForm.control}
+                control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Nom</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nom complet" {...field} />
+                      <Input placeholder="Nom de l'utilisateur" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <FormField
-                control={editForm.control}
+                control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="email@exemple.com" {...field} />
+                      <Input placeholder="Email de l'utilisateur" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <FormField
-                control={editForm.control}
+                control={form.control}
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mot de passe (laisser vide pour ne pas changer)</FormLabel>
+                    <FormLabel>Mot de passe</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Nouveau mot de passe" {...field} />
+                      <Input type="password" placeholder="Mot de passe" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {userRole === 'teacher' && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="department"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Département</FormLabel>
+                        <Select onValueChange={(value) => {
+                          setSelectedDepartment(value);
+                        }} value={selectedDepartment}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner un département" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">Tous les départements</SelectItem>
+                            {departments.map((dept) => (
+                              <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="border rounded-md p-4">
+                    <p className="text-sm font-medium mb-2">Classes disponibles :</p>
+                    {availableClasses.length === 0 ? (
+                      <p className="text-muted-foreground">Aucune classe disponible.</p>
+                    ) : (
+                      availableClasses.map((cls) => (
+                        <div key={cls.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`class-${cls.id}`}
+                            checked={selectedClasses.includes(cls.id)}
+                            onCheckedChange={() => handleClassSelectionChange(cls.id)}
+                          />
+                          <label
+                            htmlFor={`class-${cls.id}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            {cls.name}
+                          </label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
+              )}
+
+              <DialogFooter>
+                <Button type="submit">Ajouter</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog pour modifier un utilisateur */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Modifier un utilisateur</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleUpdateUser)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nom</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nom de l'utilisateur" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Email de l'utilisateur" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* Le champ mot de passe est intentionnellement omis ici */}
+
+              {userRole === 'teacher' && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="department"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Département</FormLabel>
+                        <Select onValueChange={(value) => {
+                          setSelectedDepartment(value);
+                        }} value={selectedDepartment}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner un département" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">Tous les départements</SelectItem>
+                            {departments.map((dept) => (
+                              <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="border rounded-md p-4">
+                    <p className="text-sm font-medium mb-2">Classes disponibles :</p>
+                    {availableClasses.length === 0 ? (
+                      <p className="text-muted-foreground">Aucune classe disponible.</p>
+                    ) : (
+                      availableClasses.map((cls) => (
+                        <div key={cls.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`class-${cls.id}`}
+                            checked={selectedClasses.includes(cls.id)}
+                            onCheckedChange={() => handleClassSelectionChange(cls.id)}
+                          />
+                          <label
+                            htmlFor={`class-${cls.id}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            {cls.name}
+                          </label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
+              )}
+
               <DialogFooter>
                 <Button type="submit">Enregistrer</Button>
               </DialogFooter>
@@ -624,6 +543,7 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog pour supprimer un utilisateur */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -631,7 +551,7 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
           </DialogHeader>
           <div className="py-4">
             <p>
-              Êtes-vous sûr de vouloir supprimer{' '}
+              Êtes-vous sûr de vouloir supprimer cet utilisateur{' '}
               <span className="font-semibold">{selectedUser?.name}</span> ?
               Cette action est irréversible.
             </p>
@@ -642,109 +562,6 @@ const UserManagementTable = ({ userRole }: UserManagementTableProps) => {
             </Button>
             <Button variant="destructive" onClick={handleDeleteUser}>
               Supprimer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isClassDialogOpen} onOpenChange={setIsClassDialogOpen}>
-        <DialogContent className="sm:max-w-[525px]">
-          <DialogHeader>
-            <DialogTitle>
-              Gérer les classes de {selectedUser?.name}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="border rounded-md p-4">
-              <h3 className="font-medium mb-2">Assigner une classe</h3>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label htmlFor="department">Département</Label>
-                  <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                    <SelectTrigger id="department">
-                      <SelectValue placeholder="Sélectionner un département" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="class">Classe</Label>
-                  <Select 
-                    value={selectedClass} 
-                    onValueChange={setSelectedClass}
-                    disabled={!selectedDepartment}
-                  >
-                    <SelectTrigger id="class">
-                      <SelectValue placeholder="Sélectionner une classe" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {classes.map((cls) => (
-                        <SelectItem key={cls.id} value={cls.id}>
-                          {cls.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <Button 
-                onClick={handleAssignClass} 
-                disabled={!selectedClass}
-                className="mt-2"
-              >
-                Assigner
-              </Button>
-            </div>
-            
-            <div>
-              <h3 className="font-medium mb-2">Classes assignées</h3>
-              {userClasses.length === 0 ? (
-                <p className="text-muted-foreground">Aucune classe assignée.</p>
-              ) : (
-                <div className="border rounded-md overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Classe</TableHead>
-                        <TableHead>Département</TableHead>
-                        <TableHead className="w-16"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {userClasses.map((tc) => (
-                        <TableRow key={tc.id}>
-                          <TableCell>{tc.className}</TableCell>
-                          <TableCell>{tc.departmentName}</TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive"
-                              onClick={() => handleRemoveClass(tc.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button onClick={() => setIsClassDialogOpen(false)}>
-              Fermer
             </Button>
           </DialogFooter>
         </DialogContent>

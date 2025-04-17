@@ -14,7 +14,8 @@ import {
   Printer,
   BarChart2,
   Users,
-  Warehouse
+  Warehouse,
+  GraduationCap
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -154,6 +155,15 @@ const Layout = ({ children, title }: LayoutProps) => {
                       <span>Gestion des utilisateurs</span>
                     </Link>
                   </li>
+                  <li>
+                    <Link 
+                      to="/class-management" 
+                      className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
+                    >
+                      <GraduationCap className="mr-2 h-5 w-5" />
+                      <span>Classes et départements</span>
+                    </Link>
+                  </li>
                 </>
               )}
               
@@ -193,6 +203,15 @@ const Layout = ({ children, title }: LayoutProps) => {
                     >
                       <Users className="mr-2 h-5 w-5" />
                       <span>Gestion des utilisateurs</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      to="/class-management" 
+                      className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
+                    >
+                      <GraduationCap className="mr-2 h-5 w-5" />
+                      <span>Classes et départements</span>
                     </Link>
                   </li>
                 </>

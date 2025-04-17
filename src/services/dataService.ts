@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Room, Equipment, Request, ResourceUpdate, Department, Class, TeacherClass, Notification, RoomType, RequestStatus, RequestType } from '@/data/models';
 import { format, parseISO } from 'date-fns';
@@ -734,9 +733,9 @@ export const getRequestsByStatus = async (status: RequestStatus): Promise<Reques
 export const createRequest = async (request: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<Request> => {
   try {
     // For simplicity, ensure the status is a valid Supabase enum value
-    // Changed from 'admin_approved' to 'pending' to match the valid enum values
-    const validStatus = request.status === 'admin_approved' ? 'pending' : 
-                        request.status === 'returned' ? 'approved' : request.status;
+    let validStatus = request.status;
+    if (request.status === 'admin_approved') validStatus = 'pending';
+    if (request.status === 'returned') validStatus = 'rejected';
     
     const { data, error } = await supabase
       .from('reservations')
@@ -796,9 +795,10 @@ export const updateRequest = async (
   notes?: string
 ): Promise<Request> => {
   try {
-    // Convert 'admin_approved' and 'returned' to valid enum values in the database
-    const validStatus = status === 'admin_approved' ? 'pending' : 
-                       status === 'returned' ? 'approved' : status;
+    // Convert non-standard status values to ones accepted by the database
+    let validStatus = status;
+    if (status === 'admin_approved') validStatus = 'pending';
+    if (status === 'returned') validStatus = 'rejected';
     
     const updatedRequest: Record<string, any> = {
       status: validStatus,
