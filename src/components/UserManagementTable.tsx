@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { User, useAuth, UserRole } from '@/contexts/AuthContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -46,7 +47,14 @@ const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
   const fetchUsers = async () => {
     try {
       const data = await getUsers(userRole);
-      setUsers(data);
+      // Map the profile data to User format
+      const formattedUsers: User[] = data.map(profile => ({
+        id: profile.id,
+        name: profile.full_name || '',
+        email: profile.email || '',
+        role: profile.role as UserRole
+      }));
+      setUsers(formattedUsers);
     } catch (error) {
       console.error('Failed to fetch users:', error);
       toast({

@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Room, Equipment, Request, ResourceUpdate, Department, Class, TeacherClass, Notification, RoomType, RequestStatus, RequestType } from '@/data/models';
+import { Room, Equipment, Request, ResourceUpdate, Department, Class, TeacherClass, Notification, RoomType, RequestStatus, RequestType, UserRole } from '@/data/models';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -733,9 +733,16 @@ export const getRequestsByStatus = async (status: RequestStatus): Promise<Reques
 export const createRequest = async (request: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<Request> => {
   try {
     // For simplicity, ensure the status is a valid Supabase enum value
-    let validStatus = request.status;
-    if (request.status === 'admin_approved') validStatus = 'pending';
-    if (request.status === 'returned') validStatus = 'rejected';
+    let validStatus: "pending" | "approved" | "rejected" | "cancelled" = "pending";
+    
+    // Convert any non-standard status to the acceptable values
+    if (request.status === 'admin_approved' || request.status === 'pending') {
+      validStatus = "pending";
+    } else if (request.status === 'approved') {
+      validStatus = "approved";
+    } else if (request.status === 'rejected' || request.status === 'returned') {
+      validStatus = "rejected";
+    }
     
     const { data, error } = await supabase
       .from('reservations')
@@ -796,9 +803,15 @@ export const updateRequest = async (
 ): Promise<Request> => {
   try {
     // Convert non-standard status values to ones accepted by the database
-    let validStatus = status;
-    if (status === 'admin_approved') validStatus = 'pending';
-    if (status === 'returned') validStatus = 'rejected';
+    let validStatus: "pending" | "approved" | "rejected" | "cancelled" = "pending";
+    
+    if (status === 'admin_approved' || status === 'pending') {
+      validStatus = "pending";
+    } else if (status === 'approved') {
+      validStatus = "approved";
+    } else if (status === 'rejected' || status === 'returned') {
+      validStatus = "rejected";
+    }
     
     const updatedRequest: Record<string, any> = {
       status: validStatus,
