@@ -16,14 +16,18 @@ export const formatDateTime = (dateString: string): string => {
 
 // Request Status Conversion Helper
 const convertRequestStatus = (status: RequestStatus): "pending" | "approved" | "rejected" | "cancelled" => {
-  if (status === 'admin_approved' || status === 'pending') {
-    return "pending";
-  } else if (status === 'approved') {
-    return "approved";
-  } else if (status === 'rejected' || status === 'returned') {
-    return "rejected";
-  } else {
-    return "cancelled";
+  switch (status) {
+    case 'admin_approved':
+      return "pending";
+    case 'approved':
+      return "approved";
+    case 'rejected':
+    case 'returned':
+      return "rejected";
+    case 'cancelled':
+      return "cancelled";
+    default:
+      return "pending";
   }
 };
 
@@ -980,23 +984,4 @@ export const deleteUser = async (userId: string) => {
 };
 
 export const getUsers = async (role: UserRole) => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('role', role);
-
-  if (error) throw error;
-  return data;
-};
-
-export const handleReservationStatusChange = async (
-  reservationId: string,
-  newStatus: "pending" | "approved" | "rejected" | "cancelled"
-) => {
-  const { error } = await supabase
-    .from('reservations')
-    .update({ status: newStatus })
-    .eq('id', reservationId);
-
-  if (error) throw error;
-};
+  const { data,

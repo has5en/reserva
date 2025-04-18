@@ -115,6 +115,7 @@ export type Database = {
           clearance_level: string | null
           created_at: string
           department: string | null
+          departments: string[] | null
           full_name: string | null
           id: string
           rank: string | null
@@ -126,6 +127,7 @@ export type Database = {
           clearance_level?: string | null
           created_at?: string
           department?: string | null
+          departments?: string[] | null
           full_name?: string | null
           id: string
           rank?: string | null
@@ -137,6 +139,7 @@ export type Database = {
           clearance_level?: string | null
           created_at?: string
           department?: string | null
+          departments?: string[] | null
           full_name?: string | null
           id?: string
           rank?: string | null
