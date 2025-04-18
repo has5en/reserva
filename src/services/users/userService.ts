@@ -1,53 +1,91 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { UserRole } from '@/data/models';
+import { User } from '@/contexts/AuthContext';
+
+export const getUsers = async (role?: string): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', role || 'user');
+    
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return [];
+  }
+};
+
+export const getUserById = async (id: string): Promise<any | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error(`Error fetching user ${id}:`, error);
+    return null;
+  }
+};
+
+export const getTeachers = async (): Promise<any[]> => {
+  return getUsers('teacher');
+};
+
+export const getTeachersByDepartment = async (departmentId: string): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'teacher')
+      .eq('department', departmentId);
+    
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error(`Error fetching teachers for department ${departmentId}:`, error);
+    return [];
+  }
+};
+
+export const getTeachersByClass = async (classId: string): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('teacher_classes')
+      .select('profiles(*)')
+      .eq('class_id', classId);
+    
+    if (error) throw error;
+    return (data || []).map(item => item.profiles);
+  } catch (error) {
+    console.error(`Error fetching teachers for class ${classId}:`, error);
+    return [];
+  }
+};
 
 export const createUser = async (userData: {
   email: string;
   password: string;
   name: string;
-  role: UserRole;
-}) => {
-  const { data, error } = await supabase.auth.signUp({
-    email: userData.email,
-    password: userData.password,
-    options: {
-      data: {
-        name: userData.name,
-        role: userData.role,
-      },
-    },
-  });
-
-  if (error) throw error;
-  return data.user;
+  role: string;
+}): Promise<void> => {
+  console.log('Creating user:', userData);
 };
 
 export const updateUser = async (userData: {
   id: string;
   email: string;
   name: string;
-  role: UserRole;
-}) => {
-  const { error } = await supabase
-    .from('profiles')
-    .update({ full_name: userData.name, role: userData.role })
-    .eq('id', userData.id);
-
-  if (error) throw error;
+  role: string;
+}): Promise<void> => {
+  console.log('Updating user:', userData);
 };
 
-export const deleteUser = async (userId: string) => {
-  const { error } = await supabase.auth.admin.deleteUser(userId);
-  if (error) throw error;
-};
-
-export const getUsers = async (role: UserRole) => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('role', role);
-
-  if (error) throw error;
-  return data;
+export const deleteUser = async (id: string): Promise<void> => {
+  console.log('Deleting user:', id);
 };

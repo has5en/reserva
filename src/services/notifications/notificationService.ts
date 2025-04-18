@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Notification } from '@/data/models';
 
-export const getNotificationsByUserId = async (userId: string): Promise<Notification[]> => {
+export const getNotifications = async (userId: string): Promise<Notification[]> => {
   try {
     return [
       {
@@ -16,9 +16,18 @@ export const getNotificationsByUserId = async (userId: string): Promise<Notifica
       }
     ];
   } catch (error) {
-    console.error(`Error fetching notifications for user ${userId}:`, error);
+    console.error(`Error fetching notifications:`, error);
     return [];
   }
+};
+
+export const getNotificationsByUserId = async (userId: string): Promise<Notification[]> => {
+  return getNotifications(userId);
+};
+
+export const getUnreadNotifications = async (userId: string): Promise<Notification[]> => {
+  const notifications = await getNotifications(userId);
+  return notifications.filter(notification => !notification.read);
 };
 
 export const markNotificationAsRead = async (id: string): Promise<void> => {
@@ -31,4 +40,8 @@ export const markAllNotificationsAsRead = async (userId: string): Promise<void> 
 
 export const clearAllNotifications = async (userId: string): Promise<void> => {
   console.log(`Clearing all notifications for user ${userId}`);
+};
+
+export const addNotification = async (notification: Omit<Notification, 'id' | 'timestamp'>): Promise<void> => {
+  console.log('Adding notification:', notification);
 };

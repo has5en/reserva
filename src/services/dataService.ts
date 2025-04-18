@@ -13,7 +13,10 @@ import {
   getUserById, 
   getTeachers, 
   getTeachersByDepartment, 
-  getTeachersByClass 
+  getTeachersByClass,
+  createUser,
+  updateUser,
+  deleteUser
 } from './users/userService';
 
 // Re-export department services
@@ -34,7 +37,8 @@ import {
   addTeacherClass, 
   removeClass, 
   updateClass, 
-  addClass 
+  addClass,
+  deleteClass
 } from './classes/classService';
 
 // Re-export room services
@@ -49,9 +53,11 @@ import {
 
 // Re-export equipment services
 import { 
-  getEquipmentList, 
+  getEquipment,
+  getEquipmentList,
   getEquipmentById, 
-  getEquipmentByCategory, 
+  getEquipmentByCategory,
+  getAvailableEquipment,
   updateEquipment, 
   addEquipment, 
   deleteEquipment 
@@ -59,31 +65,44 @@ import {
 
 // Re-export request services
 import { 
-  getAllRequests, 
+  getAllRequests,
+  getRequests,
   getRequestsByStatus, 
   getRequestsByUserId, 
-  getRequestById, 
+  getRequestById,
+  getRequest,
   getRequestsByRoomId, 
   getRequestsByEquipmentId, 
   addRoomRequest, 
   addEquipmentRequest, 
-  addPrintingRequest, 
+  addPrintingRequest,
+  createRequest,
+  updateRequest,
   updateRequestStatus 
 } from './requests/requestService';
 
 // Re-export notification services
 import { 
-  getNotifications, 
+  getNotifications,
+  getNotificationsByUserId,
   getUnreadNotifications, 
-  markNotificationAsRead, 
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  clearAllNotifications,
   addNotification 
 } from './notifications/notificationService';
 
 // Re-export resource update services
 import { 
-  getResourceUpdates, 
-  addResourceUpdate 
+  getResourceUpdates,
+  addResourceUpdate
 } from './updates/resourceUpdateService';
+
+// Re-export utility functions
+import {
+  formatDate,
+  formatDateTime
+} from './utils/dateUtils';
 
 // Re-export everything
 export {
@@ -93,6 +112,9 @@ export {
   getTeachers,
   getTeachersByDepartment,
   getTeachersByClass,
+  createUser,
+  updateUser,
+  deleteUser,
 
   // Department services
   getDepartments,
@@ -110,6 +132,7 @@ export {
   addClass,
   removeClass,
   updateClass,
+  deleteClass,
 
   // Room services
   getRooms,
@@ -120,32 +143,45 @@ export {
   deleteRoom,
 
   // Equipment services
+  getEquipment,
   getEquipmentList,
   getEquipmentById,
   getEquipmentByCategory,
+  getAvailableEquipment,
   updateEquipment,
   addEquipment,
   deleteEquipment,
 
   // Request services
   getAllRequests,
+  getRequests,
   getRequestsByStatus,
   getRequestsByUserId,
   getRequestById,
+  getRequest,
   getRequestsByRoomId,
   getRequestsByEquipmentId,
   addRoomRequest,
   addEquipmentRequest,
   addPrintingRequest,
+  createRequest,
+  updateRequest,
   updateRequestStatus,
 
   // Notification services
   getNotifications,
+  getNotificationsByUserId,
   getUnreadNotifications,
   markNotificationAsRead,
+  markAllNotificationsAsRead,
+  clearAllNotifications,
   addNotification,
 
   // Resource update services
   getResourceUpdates,
-  addResourceUpdate
+  addResourceUpdate,
+
+  // Utility functions
+  formatDate,
+  formatDateTime
 };

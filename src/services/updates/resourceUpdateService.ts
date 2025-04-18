@@ -4,22 +4,20 @@ import { ResourceUpdate } from '@/data/models';
 
 export const getResourceUpdates = async (): Promise<ResourceUpdate[]> => {
   try {
-    return [
-      {
-        id: '1',
-        resourceType: 'room',
-        resourceId: '1',
-        resourceName: 'Classroom A',
-        updaterId: '1',
-        updaterName: 'Admin',
-        timestamp: new Date().toISOString(),
-        details: 'Equipment updated',
-        previousState: { equipment: ['Computer'] },
-        newState: { equipment: ['Computer', 'Projector'] }
-      }
-    ];
+    const { data, error } = await supabase
+      .from('resource_updates')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(50);
+    
+    if (error) throw error;
+    return data || [];
   } catch (error) {
     console.error('Error fetching resource updates:', error);
     return [];
   }
+};
+
+export const addResourceUpdate = async (updateData: Omit<ResourceUpdate, 'id' | 'timestamp'>): Promise<void> => {
+  console.log('Adding resource update:', updateData);
 };
