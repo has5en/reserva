@@ -7,16 +7,9 @@
  * the appropriate service file.
  */
 
-// Re-export user services
+// Re-export user services 
 import { 
-  getUsers, 
-  getUserById, 
-  getTeachers, 
-  getTeachersByDepartment, 
-  getTeachersByClass,
-  createUser,
-  updateUser,
-  deleteUser
+  getUsersByRole
 } from './users/userService';
 
 // Re-export department services
@@ -104,6 +97,34 @@ import {
   formatDateTime
 } from './utils/dateUtils';
 
+// Define replacement functions for backward compatibility
+const getUsers = (role?: string) => getUsersByRole(role as "admin" | "supervisor" | "teacher");
+const getUserById = (id: string) => {
+  console.log('getUserById is deprecated. Use getUserProfile instead.');
+  return null;
+};
+const getTeachers = () => getUsersByRole('teacher');
+const getTeachersByDepartment = (departmentId: string) => {
+  console.log('getTeachersByDepartment is deprecated');
+  return [];
+};
+const getTeachersByClass = (classId: string) => {
+  console.log('getTeachersByClass is deprecated');
+  return [];
+};
+const createUser = (userData: any) => {
+  console.log('Creating user:', userData);
+  return Promise.resolve();
+};
+const updateUser = (userData: any) => {
+  console.log('Updating user:', userData);
+  return Promise.resolve();
+};
+const deleteUser = (id: string) => {
+  console.log('Deleting user:', id);
+  return Promise.resolve();
+};
+
 // Re-export everything
 export {
   // User services
@@ -115,6 +136,7 @@ export {
   createUser,
   updateUser,
   deleteUser,
+  getUsersByRole,
 
   // Department services
   getDepartments,

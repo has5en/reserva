@@ -1,7 +1,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { UserRole } from '@/contexts/AuthContext';
 
-export const getUsersByRole = async (role: "admin" | "supervisor" | "teacher") => {
+export const getUsersByRole = async (role: UserRole) => {
   try {
     const { data, error } = await supabase
       .from('profiles')
