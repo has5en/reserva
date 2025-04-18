@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, Package, Eye, ArrowRight } from 'lucide-react';
-
 const getStatusBadge = (status: string) => {
   switch (status) {
     case 'pending':
@@ -25,13 +23,13 @@ const getStatusBadge = (status: string) => {
       return <Badge variant="outline">Inconnu</Badge>;
   }
 };
-
 const Dashboard = () => {
-  const { currentUser } = useAuth();
+  const {
+    currentUser
+  } = useAuth();
   const navigate = useNavigate();
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const fetchRequests = async () => {
       if (currentUser) {
@@ -45,22 +43,17 @@ const Dashboard = () => {
         }
       }
     };
-
     fetchRequests();
   }, [currentUser]);
-
   const pendingRequests = requests.filter(req => req.status === 'pending' || req.status === 'admin_approved');
   const completedRequests = requests.filter(req => req.status === 'approved' || req.status === 'rejected');
-
   const stats = {
     total: requests.length,
     pending: requests.filter(req => req.status === 'pending').length,
     approved: requests.filter(req => req.status === 'approved').length,
-    rejected: requests.filter(req => req.status === 'rejected').length,
+    rejected: requests.filter(req => req.status === 'rejected').length
   };
-
-  return (
-    <Layout title="Tableau de bord">
+  return <Layout title="Tableau de bord">
       <div className="grid gap-6">
         {/* Stats Section */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -129,22 +122,11 @@ const Dashboard = () => {
 
         {/* Requests Section */}
         <div>
-          <h2 className="text-2xl font-bold mb-4">Mes demandes</h2>
           
-          {loading ? (
-            <div className="text-center py-8">Chargement des demandes...</div>
-          ) : requests.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <p className="mb-4">Vous n'avez pas encore de demandes.</p>
-                <div className="flex justify-center gap-4">
-                  <Button onClick={() => navigate('/room-reservation')}>Réserver une salle</Button>
-                  <Button onClick={() => navigate('/equipment-request')}>Demander du matériel</Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Tabs defaultValue="pending">
+          
+          {loading ? <div className="text-center py-8">Chargement des demandes...</div> : requests.length === 0 ? <Card>
+              
+            </Card> : <Tabs defaultValue="pending">
               <TabsList className="mb-4">
                 <TabsTrigger value="pending">En cours ({pendingRequests.length})</TabsTrigger>
                 <TabsTrigger value="completed">Terminées ({completedRequests.length})</TabsTrigger>
@@ -152,23 +134,15 @@ const Dashboard = () => {
               
               <TabsContent value="pending">
                 <div className="grid gap-4">
-                  {pendingRequests.length === 0 ? (
-                    <Card>
+                  {pendingRequests.length === 0 ? <Card>
                       <CardContent className="p-6 text-center">
                         <p>Aucune demande en cours.</p>
                       </CardContent>
-                    </Card>
-                  ) : (
-                    pendingRequests.map(request => (
-                      <Card key={request.id} className="overflow-hidden">
+                    </Card> : pendingRequests.map(request => <Card key={request.id} className="overflow-hidden">
                         <CardContent className="p-0">
                           <div className="flex flex-col md:flex-row">
                             <div className="bg-accent p-6 md:w-64 flex flex-col justify-center items-center">
-                              {request.type === 'room' ? (
-                                <Building2 className="h-12 w-12 text-primary mb-2" />
-                              ) : (
-                                <Package className="h-12 w-12 text-primary mb-2" />
-                              )}
+                              {request.type === 'room' ? <Building2 className="h-12 w-12 text-primary mb-2" /> : <Package className="h-12 w-12 text-primary mb-2" />}
                               <h3 className="font-medium">
                                 {request.type === 'room' ? 'Réservation de salle' : 'Demande de matériel'}
                               </h3>
@@ -177,10 +151,7 @@ const Dashboard = () => {
                               <div className="flex justify-between items-start mb-2">
                                 <div>
                                   <h3 className="text-lg font-semibold mb-1">
-                                    {request.type === 'room' 
-                                      ? `Salle ${request.roomName}`
-                                      : `${request.equipmentQuantity}x ${request.equipmentName}`
-                                    }
+                                    {request.type === 'room' ? `Salle ${request.roomName}` : `${request.equipmentQuantity}x ${request.equipmentName}`}
                                   </h3>
                                   <p className="text-sm text-muted-foreground">
                                     Classe: {request.className} • Créée le {formatDate(request.createdAt)}
@@ -189,12 +160,7 @@ const Dashboard = () => {
                                 <div>{getStatusBadge(request.status)}</div>
                               </div>
                               <div className="mt-4 flex justify-end">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="flex items-center"
-                                  onClick={() => navigate(`/request/${request.id}`)}
-                                >
+                                <Button variant="outline" size="sm" className="flex items-center" onClick={() => navigate(`/request/${request.id}`)}>
                                   <Eye className="mr-2 h-4 w-4" />
                                   Voir détails
                                 </Button>
@@ -202,31 +168,21 @@ const Dashboard = () => {
                             </div>
                           </div>
                         </CardContent>
-                      </Card>
-                    ))
-                  )}
+                      </Card>)}
                 </div>
               </TabsContent>
               
               <TabsContent value="completed">
                 <div className="grid gap-4">
-                  {completedRequests.length === 0 ? (
-                    <Card>
+                  {completedRequests.length === 0 ? <Card>
                       <CardContent className="p-6 text-center">
                         <p>Aucune demande terminée.</p>
                       </CardContent>
-                    </Card>
-                  ) : (
-                    completedRequests.map(request => (
-                      <Card key={request.id} className="overflow-hidden">
+                    </Card> : completedRequests.map(request => <Card key={request.id} className="overflow-hidden">
                         <CardContent className="p-0">
                           <div className="flex flex-col md:flex-row">
                             <div className="bg-accent p-6 md:w-64 flex flex-col justify-center items-center">
-                              {request.type === 'room' ? (
-                                <Building2 className="h-12 w-12 text-primary mb-2" />
-                              ) : (
-                                <Package className="h-12 w-12 text-primary mb-2" />
-                              )}
+                              {request.type === 'room' ? <Building2 className="h-12 w-12 text-primary mb-2" /> : <Package className="h-12 w-12 text-primary mb-2" />}
                               <h3 className="font-medium">
                                 {request.type === 'room' ? 'Réservation de salle' : 'Demande de matériel'}
                               </h3>
@@ -235,10 +191,7 @@ const Dashboard = () => {
                               <div className="flex justify-between items-start mb-2">
                                 <div>
                                   <h3 className="text-lg font-semibold mb-1">
-                                    {request.type === 'room' 
-                                      ? `Salle ${request.roomName}`
-                                      : `${request.equipmentQuantity}x ${request.equipmentName}`
-                                    }
+                                    {request.type === 'room' ? `Salle ${request.roomName}` : `${request.equipmentQuantity}x ${request.equipmentName}`}
                                   </h3>
                                   <p className="text-sm text-muted-foreground">
                                     Classe: {request.className} • Créée le {formatDate(request.createdAt)}
@@ -247,12 +200,7 @@ const Dashboard = () => {
                                 <div>{getStatusBadge(request.status)}</div>
                               </div>
                               <div className="mt-4 flex justify-end">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="flex items-center"
-                                  onClick={() => navigate(`/request/${request.id}`)}
-                                >
+                                <Button variant="outline" size="sm" className="flex items-center" onClick={() => navigate(`/request/${request.id}`)}>
                                   <Eye className="mr-2 h-4 w-4" />
                                   Voir détails
                                 </Button>
@@ -260,17 +208,12 @@ const Dashboard = () => {
                             </div>
                           </div>
                         </CardContent>
-                      </Card>
-                    ))
-                  )}
+                      </Card>)}
                 </div>
               </TabsContent>
-            </Tabs>
-          )}
+            </Tabs>}
         </div>
       </div>
-    </Layout>
-  );
+    </Layout>;
 };
-
 export default Dashboard;
