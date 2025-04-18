@@ -94,29 +94,11 @@ const Dashboard = () => {
         {/* Quick Access Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="cursor-pointer transition-shadow hover:shadow-md" onClick={() => navigate('/room-reservation')}>
-            <CardContent className="p-6 flex items-center">
-              <div className="bg-accent rounded-full p-3 mr-4">
-                <Building2 className="h-8 w-8 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Réserver une salle</h3>
-                <p className="text-muted-foreground">Créer une nouvelle demande de réservation de salle</p>
-              </div>
-              <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground" />
-            </CardContent>
+            
           </Card>
 
           <Card className="cursor-pointer transition-shadow hover:shadow-md" onClick={() => navigate('/equipment-request')}>
-            <CardContent className="p-6 flex items-center">
-              <div className="bg-accent rounded-full p-3 mr-4">
-                <Package className="h-8 w-8 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Demander du matériel</h3>
-                <p className="text-muted-foreground">Créer une nouvelle demande de matériel</p>
-              </div>
-              <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground" />
-            </CardContent>
+            
           </Card>
         </div>
 
