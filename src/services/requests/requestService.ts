@@ -22,12 +22,15 @@ export const getAllRequests = async (): Promise<Request[]> => {
 // Alias for backwards compatibility
 export const getRequests = getAllRequests;
 
-export const getRequestsByStatus = async (status: string): Promise<Request[]> => {
+export const getRequestsByStatus = async (status: RequestStatus): Promise<Request[]> => {
   try {
+    // Convert our application's status to database status
+    const dbStatus = convertRequestStatusToDb(status);
+    
     const { data, error } = await supabase
       .from('reservations')
       .select('*')
-      .eq('status', status);
+      .eq('status', dbStatus);
     
     if (error) throw error;
     
@@ -112,10 +115,12 @@ export const addRoomRequest = async (requestData: Omit<Request, 'id' | 'createdA
   console.log('Adding room request:', requestData);
   
   try {
-    // Transform to database schema
+    // Transform to database schema and convert status to DB format
+    const dbStatus = convertRequestStatusToDb(requestData.status);
+    
     const dbData = {
       type: requestData.type,
-      status: requestData.status,
+      status: dbStatus,
       user_id: requestData.userId,
       user_name: requestData.userName,
       room_id: requestData.roomId,
@@ -144,10 +149,12 @@ export const addEquipmentRequest = async (requestData: Omit<Request, 'id' | 'cre
   console.log('Adding equipment request:', requestData);
   
   try {
-    // Transform to database schema
+    // Transform to database schema and convert status to DB format
+    const dbStatus = convertRequestStatusToDb(requestData.status);
+    
     const dbData = {
       type: requestData.type,
-      status: requestData.status,
+      status: dbStatus,
       user_id: requestData.userId,
       user_name: requestData.userName,
       equipment_id: requestData.equipmentId,
@@ -177,10 +184,12 @@ export const addPrintingRequest = async (requestData: Omit<Request, 'id' | 'crea
   console.log('Adding printing request:', requestData);
   
   try {
-    // Transform to database schema
+    // Transform to database schema and convert status to DB format
+    const dbStatus = convertRequestStatusToDb(requestData.status);
+    
     const dbData = {
       type: requestData.type,
-      status: requestData.status,
+      status: dbStatus,
       user_id: requestData.userId,
       user_name: requestData.userName,
       class_id: requestData.classId,
@@ -225,7 +234,10 @@ export const updateRequestStatus = async (id: string, status: RequestStatus, not
   console.log(`Updating request ${id} status to ${status}`);
   
   try {
-    const updateData: any = { status };
+    // Convert our application's status to database status
+    const dbStatus = convertRequestStatusToDb(status);
+    
+    const updateData: any = { status: dbStatus };
     if (notes) updateData.notes = notes;
     
     const { error } = await supabase
@@ -252,6 +264,12 @@ export const updateRequest = async (id: string, updates: Partial<Request>): Prom
     // Convert from interface properties to database column names
     const dbUpdates: any = {};
     for (const [key, value] of Object.entries(updates)) {
+      // Handle status separately
+      if (key === 'status' && value) {
+        dbUpdates.status = convertRequestStatusToDb(value as RequestStatus);
+        continue;
+      }
+      
       // Convert camelCase to snake_case for database fields
       const dbKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
       dbUpdates[dbKey] = value;
@@ -269,12 +287,46 @@ export const updateRequest = async (id: string, updates: Partial<Request>): Prom
   }
 };
 
+// Helper function to convert our application's status to database status
+const convertRequestStatusToDb = (status: RequestStatus): string => {
+  switch (status) {
+    case 'admin_approved':
+      return 'pending'; // Map to pending in the database as it's not supported
+    case 'pending':
+      return 'pending';
+    case 'approved':
+      return 'approved';
+    case 'rejected':
+      return 'rejected';
+    case 'returned':
+      return 'cancelled'; // Map to cancelled in the database
+    default:
+      return 'pending';
+  }
+};
+
+// Helper function to convert database status to our application's status
+const convertDbStatusToRequest = (dbStatus: string): RequestStatus => {
+  switch (dbStatus) {
+    case 'pending':
+      return 'pending';
+    case 'approved':
+      return 'approved';
+    case 'rejected':
+      return 'rejected';
+    case 'cancelled':
+      return 'returned'; // Map cancelled to returned in our application
+    default:
+      return 'pending';
+  }
+};
+
 // Helper function to transform a single database row to Request interface
 function transformRequestData(data: any): Request {
   return {
     id: data.id,
-    type: data.type,
-    status: data.status,
+    type: data.type || 'room',
+    status: convertDbStatusToRequest(data.status),
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     userId: data.user_id,

@@ -16,7 +16,7 @@ export const getClasses = async (): Promise<Class[]> => {
       name: item.name,
       studentCount: item.student_count,
       departmentId: item.department_id,
-      department: item.department,
+      department: undefined, // We don't have this field in the database response
       unit: item.unit,
       created_at: item.created_at,
       updated_at: item.updated_at
@@ -45,7 +45,7 @@ export const getClassById = async (id: string): Promise<Class | null> => {
       name: data.name,
       studentCount: data.student_count,
       departmentId: data.department_id,
-      department: data.department,
+      department: undefined, // We don't have this field in the database response
       unit: data.unit,
       created_at: data.created_at,
       updated_at: data.updated_at
@@ -71,7 +71,7 @@ export const getClassesByDepartment = async (departmentId: string): Promise<Clas
       name: item.name,
       studentCount: item.student_count,
       departmentId: item.department_id,
-      department: item.department,
+      department: undefined, // We don't have this field in the database response
       unit: item.unit,
       created_at: item.created_at,
       updated_at: item.updated_at
@@ -99,7 +99,7 @@ export const getClassesByTeacher = async (teacherId: string): Promise<Class[]> =
         name: cls.name,
         studentCount: cls.student_count,
         departmentId: cls.department_id,
-        department: cls.department,
+        department: undefined, // We don't have this field in the database response
         unit: cls.unit,
         created_at: cls.created_at,
         updated_at: cls.updated_at

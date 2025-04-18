@@ -16,7 +16,7 @@ export const getEquipment = async (): Promise<Equipment[]> => {
       name: item.name,
       category: item.category,
       available: item.available_quantity,
-      department: item.department,
+      department: undefined, // We don't have this field in the database response
       requires_clearance: item.requires_clearance,
       description: item.description,
       location: item.location,
@@ -50,7 +50,7 @@ export const getEquipmentById = async (id: string): Promise<Equipment | null> =>
       name: data.name,
       category: data.category,
       available: data.available_quantity,
-      department: data.department,
+      department: undefined, // We don't have this field in the database response
       requires_clearance: data.requires_clearance,
       description: data.description,
       location: data.location,
@@ -78,7 +78,7 @@ export const getEquipmentByCategory = async (category: string): Promise<Equipmen
       name: item.name,
       category: item.category,
       available: item.available_quantity,
-      department: item.department,
+      department: undefined, // We don't have this field in the database response
       requires_clearance: item.requires_clearance,
       description: item.description,
       location: item.location,
@@ -106,7 +106,7 @@ export const getAvailableEquipment = async (): Promise<Equipment[]> => {
       name: item.name,
       category: item.category,
       available: item.available_quantity,
-      department: item.department,
+      department: undefined, // We don't have this field in the database response
       requires_clearance: item.requires_clearance,
       description: item.description,
       location: item.location,
@@ -129,7 +129,6 @@ export const updateEquipment = async (equipment: Equipment): Promise<void> => {
         name: equipment.name,
         category: equipment.category,
         available_quantity: equipment.available,
-        department: equipment.department,
         requires_clearance: equipment.requires_clearance,
         description: equipment.description,
         location: equipment.location,
@@ -154,7 +153,6 @@ export const addEquipment = async (equipment: Omit<Equipment, 'id'>): Promise<vo
         name: equipment.name,
         category: equipment.category,
         available_quantity: equipment.available,
-        department: equipment.department,
         requires_clearance: equipment.requires_clearance,
         description: equipment.description,
         location: equipment.location,
