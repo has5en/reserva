@@ -20,7 +20,7 @@ const Index = () => {
             
             <h1 className="text-2xl font-bold">Reserva</h1>
           </div>
-          <Button variant="outline" className="text-white border-white hover:bg-white hover:text-primary" onClick={() => navigate('/login')}>
+          <Button variant="outline" onClick={() => navigate('/login')} className="border-white hover:bg-white text-slate-950">
             Connexion
           </Button>
         </div>
