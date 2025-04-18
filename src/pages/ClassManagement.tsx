@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -260,13 +259,13 @@ const ClassManagement = () => {
     
     try {
       await deleteClass(selectedClass.id);
-      
+    
       if (filterDepartmentId) {
         await fetchClassesByDepartmentId(filterDepartmentId);
       } else {
         await fetchClasses();
       }
-      
+    
       toast({
         title: "Classe supprimée",
         description: `${selectedClass.name} a été supprimée avec succès.`,

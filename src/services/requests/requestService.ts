@@ -1,15 +1,18 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Request } from '@/data/models';
+import { Request, RequestStatus } from '@/data/models';
 
 export const getAllRequests = async (): Promise<Request[]> => {
   try {
+    // Change 'requests' to 'reservations' to match the actual table name
     const { data, error } = await supabase
-      .from('requests')
+      .from('reservations')
       .select('*');
     
     if (error) throw error;
-    return data || [];
+    
+    // Transform database rows to match the Request interface
+    return transformRequestsData(data || []);
   } catch (error) {
     console.error('Error fetching all requests:', error);
     return [];
@@ -22,12 +25,13 @@ export const getRequests = getAllRequests;
 export const getRequestsByStatus = async (status: string): Promise<Request[]> => {
   try {
     const { data, error } = await supabase
-      .from('requests')
+      .from('reservations')
       .select('*')
       .eq('status', status);
     
     if (error) throw error;
-    return data || [];
+    
+    return transformRequestsData(data || []);
   } catch (error) {
     console.error(`Error fetching requests with status ${status}:`, error);
     return [];
@@ -37,12 +41,13 @@ export const getRequestsByStatus = async (status: string): Promise<Request[]> =>
 export const getRequestsByUserId = async (userId: string): Promise<Request[]> => {
   try {
     const { data, error } = await supabase
-      .from('requests')
+      .from('reservations')
       .select('*')
-      .eq('userId', userId);
+      .eq('user_id', userId);
     
     if (error) throw error;
-    return data || [];
+    
+    return transformRequestsData(data || []);
   } catch (error) {
     console.error(`Error fetching requests for user ${userId}:`, error);
     return [];
@@ -52,13 +57,16 @@ export const getRequestsByUserId = async (userId: string): Promise<Request[]> =>
 export const getRequestById = async (id: string): Promise<Request | null> => {
   try {
     const { data, error } = await supabase
-      .from('requests')
+      .from('reservations')
       .select('*')
       .eq('id', id)
       .single();
     
     if (error) throw error;
-    return data;
+    
+    if (!data) return null;
+    
+    return transformRequestData(data);
   } catch (error) {
     console.error(`Error fetching request ${id}:`, error);
     return null;
@@ -71,12 +79,13 @@ export const getRequest = getRequestById;
 export const getRequestsByRoomId = async (roomId: string): Promise<Request[]> => {
   try {
     const { data, error } = await supabase
-      .from('requests')
+      .from('reservations')
       .select('*')
-      .eq('roomId', roomId);
+      .eq('room_id', roomId);
     
     if (error) throw error;
-    return data || [];
+    
+    return transformRequestsData(data || []);
   } catch (error) {
     console.error(`Error fetching requests for room ${roomId}:`, error);
     return [];
@@ -86,12 +95,13 @@ export const getRequestsByRoomId = async (roomId: string): Promise<Request[]> =>
 export const getRequestsByEquipmentId = async (equipmentId: string): Promise<Request[]> => {
   try {
     const { data, error } = await supabase
-      .from('requests')
+      .from('reservations')
       .select('*')
-      .eq('equipmentId', equipmentId);
+      .eq('equipment_id', equipmentId);
     
     if (error) throw error;
-    return data || [];
+    
+    return transformRequestsData(data || []);
   } catch (error) {
     console.error(`Error fetching requests for equipment ${equipmentId}:`, error);
     return [];
@@ -100,14 +110,102 @@ export const getRequestsByEquipmentId = async (equipmentId: string): Promise<Req
 
 export const addRoomRequest = async (requestData: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
   console.log('Adding room request:', requestData);
+  
+  try {
+    // Transform to database schema
+    const dbData = {
+      type: requestData.type,
+      status: requestData.status,
+      user_id: requestData.userId,
+      user_name: requestData.userName,
+      room_id: requestData.roomId,
+      room_name: requestData.roomName,
+      class_id: requestData.classId,
+      class_name: requestData.className,
+      start_time: requestData.startTime,
+      end_time: requestData.endTime,
+      date: requestData.date,
+      notes: requestData.notes,
+      requires_commander_approval: requestData.requires_commander_approval
+    };
+    
+    const { error } = await supabase
+      .from('reservations')
+      .insert(dbData);
+      
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error adding room request:', error);
+    throw error;
+  }
 };
 
 export const addEquipmentRequest = async (requestData: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
   console.log('Adding equipment request:', requestData);
+  
+  try {
+    // Transform to database schema
+    const dbData = {
+      type: requestData.type,
+      status: requestData.status,
+      user_id: requestData.userId,
+      user_name: requestData.userName,
+      equipment_id: requestData.equipmentId,
+      equipment_name: requestData.equipmentName,
+      equipment_quantity: requestData.equipmentQuantity,
+      class_id: requestData.classId,
+      class_name: requestData.className,
+      start_time: requestData.startTime,
+      end_time: requestData.endTime,
+      date: requestData.date,
+      notes: requestData.notes,
+      requires_commander_approval: requestData.requires_commander_approval
+    };
+    
+    const { error } = await supabase
+      .from('reservations')
+      .insert(dbData);
+      
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error adding equipment request:', error);
+    throw error;
+  }
 };
 
 export const addPrintingRequest = async (requestData: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
   console.log('Adding printing request:', requestData);
+  
+  try {
+    // Transform to database schema
+    const dbData = {
+      type: requestData.type,
+      status: requestData.status,
+      user_id: requestData.userId,
+      user_name: requestData.userName,
+      class_id: requestData.classId,
+      class_name: requestData.className,
+      date: requestData.date,
+      notes: requestData.notes,
+      document_name: requestData.documentName,
+      page_count: requestData.pageCount,
+      color_print: requestData.colorPrint,
+      double_sided: requestData.doubleSided,
+      copies: requestData.copies,
+      pdf_file_name: requestData.pdfFileName,
+      requires_commander_approval: requestData.requires_commander_approval,
+      signature: requestData.signature
+    };
+    
+    const { error } = await supabase
+      .from('reservations')
+      .insert(dbData);
+      
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error adding printing request:', error);
+    throw error;
+  }
 };
 
 export const createRequest = async (requestData: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
@@ -123,14 +221,90 @@ export const createRequest = async (requestData: Omit<Request, 'id' | 'createdAt
   }
 };
 
-export const updateRequestStatus = async (id: string, status: string, notes?: string): Promise<void> => {
+export const updateRequestStatus = async (id: string, status: RequestStatus, notes?: string): Promise<void> => {
   console.log(`Updating request ${id} status to ${status}`);
+  
+  try {
+    const updateData: any = { status };
+    if (notes) updateData.notes = notes;
+    
+    const { error } = await supabase
+      .from('reservations')
+      .update(updateData)
+      .eq('id', id);
+      
+    if (error) throw error;
+  } catch (error) {
+    console.error(`Error updating request status for ${id}:`, error);
+    throw error;
+  }
 };
 
 // Alias for backwards compatibility
 export const updateRequest = async (id: string, updates: Partial<Request>): Promise<void> => {
   console.log(`Updating request ${id}:`, updates);
+  
   if (updates.status) {
     return updateRequestStatus(id, updates.status, updates.notes);
   }
+  
+  try {
+    // Convert from interface properties to database column names
+    const dbUpdates: any = {};
+    for (const [key, value] of Object.entries(updates)) {
+      // Convert camelCase to snake_case for database fields
+      const dbKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+      dbUpdates[dbKey] = value;
+    }
+    
+    const { error } = await supabase
+      .from('reservations')
+      .update(dbUpdates)
+      .eq('id', id);
+      
+    if (error) throw error;
+  } catch (error) {
+    console.error(`Error updating request ${id}:`, error);
+    throw error;
+  }
 };
+
+// Helper function to transform a single database row to Request interface
+function transformRequestData(data: any): Request {
+  return {
+    id: data.id,
+    type: data.type,
+    status: data.status,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+    userId: data.user_id,
+    userName: data.user_name,
+    roomId: data.room_id,
+    roomName: data.room_name,
+    equipmentId: data.equipment_id,
+    equipmentName: data.equipment_name,
+    equipmentQuantity: data.equipment_quantity,
+    classId: data.class_id,
+    className: data.class_name,
+    startTime: data.start_time,
+    endTime: data.end_time,
+    date: data.date,
+    notes: data.notes,
+    requires_commander_approval: data.requires_commander_approval,
+    signature: data.signature,
+    documentName: data.document_name,
+    pageCount: data.page_count,
+    colorPrint: data.color_print,
+    doubleSided: data.double_sided,
+    copies: data.copies,
+    pdfFileName: data.pdf_file_name,
+    adminApproval: data.admin_approval,
+    supervisorApproval: data.supervisor_approval,
+    returnInfo: data.return_info
+  };
+}
+
+// Helper function to transform multiple database rows to Request interface array
+function transformRequestsData(data: any[]): Request[] {
+  return data.map(transformRequestData);
+}

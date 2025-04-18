@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -7,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { getRequest, updateRequest } from '@/services/dataService';
+import { getRequest, updateRequestStatus } from '@/services/dataService';
 import { Request, RequestStatus } from '@/data/models';
 import { toast } from '@/components/ui/use-toast';
 import { ArrowLeft, Check, X, RefreshCw, FileCheck } from 'lucide-react';
@@ -63,11 +62,9 @@ const RequestDetails = () => {
 
     try {
       setProcessingAction(true);
-      await updateRequest(
+      await updateRequestStatus(
         request.id,
         newStatus,
-        currentUser.id,
-        currentUser.name,
         notes
       );
 
