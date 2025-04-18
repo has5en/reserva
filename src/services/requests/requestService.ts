@@ -131,6 +131,7 @@ export const addRoomRequest = async (requestData: Omit<Request, 'id' | 'createdA
       end_time: requestData.endTime,
       date: requestData.date,
       notes: requestData.notes,
+      purpose: requestData.notes, // Map notes to purpose as it seems to be the equivalent field
       requires_commander_approval: requestData.requires_commander_approval
     };
     
@@ -162,10 +163,11 @@ export const addEquipmentRequest = async (requestData: Omit<Request, 'id' | 'cre
       equipment_quantity: requestData.equipmentQuantity,
       class_id: requestData.classId,
       class_name: requestData.className,
-      start_time: requestData.startTime,
-      end_time: requestData.endTime,
+      start_time: requestData.startTime || new Date().toISOString(), // Provide default value if missing
+      end_time: requestData.endTime || new Date().toISOString(), // Provide default value if missing
       date: requestData.date,
       notes: requestData.notes,
+      purpose: requestData.notes, // Map notes to purpose as it seems to be the equivalent field
       requires_commander_approval: requestData.requires_commander_approval
     };
     
@@ -194,8 +196,11 @@ export const addPrintingRequest = async (requestData: Omit<Request, 'id' | 'crea
       user_name: requestData.userName,
       class_id: requestData.classId,
       class_name: requestData.className,
+      start_time: new Date().toISOString(), // Provide default value for required field
+      end_time: new Date().toISOString(), // Provide default value for required field
       date: requestData.date,
       notes: requestData.notes,
+      purpose: requestData.notes, // Map notes to purpose as it seems to be the equivalent field
       document_name: requestData.documentName,
       page_count: requestData.pageCount,
       color_print: requestData.colorPrint,
@@ -288,7 +293,7 @@ export const updateRequest = async (id: string, updates: Partial<Request>): Prom
 };
 
 // Helper function to convert our application's status to database status
-const convertRequestStatusToDb = (status: RequestStatus): string => {
+const convertRequestStatusToDb = (status: RequestStatus): "pending" | "approved" | "rejected" | "cancelled" => {
   switch (status) {
     case 'admin_approved':
       return 'pending'; // Map to pending in the database as it's not supported
@@ -341,7 +346,7 @@ function transformRequestData(data: any): Request {
     startTime: data.start_time,
     endTime: data.end_time,
     date: data.date,
-    notes: data.notes,
+    notes: data.notes || data.purpose, // Map purpose to notes if notes is not available
     requires_commander_approval: data.requires_commander_approval,
     signature: data.signature,
     documentName: data.document_name,
