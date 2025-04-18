@@ -1,7 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Request, RequestStatus, RequestType } from '@/data/models';
-import { getEquipment, updateEquipment } from '../equipment/equipmentService';
+import { getEquipmentById, updateEquipment } from '../equipment/equipmentService';
 
 export const getAllRequests = async (): Promise<Request[]> => {
   try {
@@ -136,7 +135,7 @@ export const addEquipmentRequest = async (
 ): Promise<Request | null> => {
   try {
     // In a real implementation, we would check equipment availability
-    const equipment = await getEquipment(request.equipmentId);
+    const equipment = await getEquipmentById(request.equipmentId);
     
     if (!equipment || equipment.available < request.equipmentQuantity) {
       throw new Error('Equipment not available in requested quantity');
@@ -214,19 +213,23 @@ export const updateRequestStatus = async (
     
     // Handle equipment reservation/return
     if (request.type === 'equipment' && request.equipmentId && request.equipmentQuantity) {
-      const equipment = await getEquipment(request.equipmentId);
+      const equipment = await getEquipmentById(request.equipmentId);
       
       if (equipment) {
         if (status === 'approved') {
           // Reduce available equipment
           await updateEquipment({
             id: equipment.id,
+            name: equipment.name,
+            category: equipment.category,
             available: Math.max(0, equipment.available - request.equipmentQuantity)
           });
         } else if (request.status === 'approved' && (status === 'rejected' || status === 'returned')) {
           // Return equipment to inventory
           await updateEquipment({
             id: equipment.id,
+            name: equipment.name,
+            category: equipment.category,
             available: equipment.available + request.equipmentQuantity
           });
         }
@@ -267,19 +270,5 @@ export const updateRequestStatus = async (
   } catch (error) {
     console.error(`Error updating request ${id} status to ${status}:`, error);
     throw error;
-  }
-};
-
-export const getEquipment = async (id: string) => {
-  try {
-    return {
-      id,
-      name: "Equipment",
-      available: 10,
-      category: "Category"
-    };
-  } catch (error) {
-    console.error(`Error fetching equipment ${id}:`, error);
-    return null;
   }
 };
