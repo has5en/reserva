@@ -14,6 +14,19 @@ export const formatDateTime = (dateString: string): string => {
   return format(date, 'dd MMMM yyyy à HH:mm', { locale: fr });
 };
 
+// Request Status Conversion Helper
+const convertRequestStatus = (status: RequestStatus): "pending" | "approved" | "rejected" | "cancelled" => {
+  if (status === 'admin_approved' || status === 'pending') {
+    return "pending";
+  } else if (status === 'approved') {
+    return "approved";
+  } else if (status === 'rejected' || status === 'returned') {
+    return "rejected";
+  } else {
+    return "cancelled";
+  }
+};
+
 // Departments
 export const getDepartments = async (): Promise<Department[]> => {
   try {
@@ -733,16 +746,7 @@ export const getRequestsByStatus = async (status: RequestStatus): Promise<Reques
 export const createRequest = async (request: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<Request> => {
   try {
     // For simplicity, ensure the status is a valid Supabase enum value
-    let validStatus: "pending" | "approved" | "rejected" | "cancelled" = "pending";
-    
-    // Convert any non-standard status to the acceptable values
-    if (request.status === 'admin_approved' || request.status === 'pending') {
-      validStatus = "pending";
-    } else if (request.status === 'approved') {
-      validStatus = "approved";
-    } else if (request.status === 'rejected' || request.status === 'returned') {
-      validStatus = "rejected";
-    }
+    const validStatus = convertRequestStatus(request.status);
     
     const { data, error } = await supabase
       .from('reservations')
@@ -766,7 +770,7 @@ export const createRequest = async (request: Omit<Request, 'id' | 'createdAt' | 
     
     return {
       id: data.id,
-      type: 'room' as RequestType, // Défaut pour les réservations
+      type: 'room' as RequestType, // Par défaut pour les réservations
       status: data.status as RequestStatus,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
@@ -803,15 +807,7 @@ export const updateRequest = async (
 ): Promise<Request> => {
   try {
     // Convert non-standard status values to ones accepted by the database
-    let validStatus: "pending" | "approved" | "rejected" | "cancelled" = "pending";
-    
-    if (status === 'admin_approved' || status === 'pending') {
-      validStatus = "pending";
-    } else if (status === 'approved') {
-      validStatus = "approved";
-    } else if (status === 'rejected' || status === 'returned') {
-      validStatus = "rejected";
-    }
+    const validStatus = convertRequestStatus(status);
     
     const updatedRequest: Record<string, any> = {
       status: validStatus,

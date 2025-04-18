@@ -47,11 +47,11 @@ const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
   const fetchUsers = async () => {
     try {
       const data = await getUsers(userRole);
-      // Map the profile data to User format
+      // Map the profile data to User format - note that profiles don't have email directly
       const formattedUsers: User[] = data.map(profile => ({
         id: profile.id,
         name: profile.full_name || '',
-        email: profile.email || '',
+        email: profile.id, // Using id as email temporarily since profile doesn't have email
         role: profile.role as UserRole
       }));
       setUsers(formattedUsers);
