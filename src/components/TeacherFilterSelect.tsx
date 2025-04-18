@@ -14,7 +14,7 @@ export const TeacherFilterSelect = ({ type, items, onChange }: TeacherFilterSele
         <SelectValue placeholder={`Filtrer par ${type === 'department' ? 'département' : 'classe'}`} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="">Tous</SelectItem>
+        <SelectItem value="all">Tous</SelectItem>
         {items.map((item) => (
           <SelectItem key={item.id} value={item.id}>
             {item.name}

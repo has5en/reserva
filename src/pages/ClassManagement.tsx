@@ -394,7 +394,7 @@ const ClassManagement = () => {
                     <SelectValue placeholder="Filtrer par département" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tous les départements</SelectItem>
+                    <SelectItem value="all">Tous les départements</SelectItem>
                     {departments.map((dept) => (
                       <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
                     ))}
