@@ -1,324 +1,285 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Request, RequestStatus } from '@/data/models';
-import { format, parseISO } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { Request, RequestStatus, RequestType } from '@/data/models';
+import { getEquipment, updateEquipment } from '../equipment/equipmentService';
 
-export const formatDate = (dateString: string): string => {
-  const date = parseISO(dateString);
-  return format(date, 'dd MMMM yyyy', { locale: fr });
-};
-
-export const formatDateTime = (dateString: string): string => {
-  const date = parseISO(dateString);
-  return format(date, 'dd MMMM yyyy à HH:mm', { locale: fr });
-};
-
-const convertRequestStatus = (status: RequestStatus): "pending" | "approved" | "rejected" | "cancelled" => {
-  switch (status) {
-    case 'admin_approved':
-      return "pending";
-    case 'approved':
-      return "approved";
-    case 'rejected':
-    case 'returned':
-      return "rejected";
-    case 'cancelled':
-      return "cancelled";
-    default:
-      return "pending";
-  }
-};
-
-export const getRequest = async (id: string): Promise<Request | null> => {
+export const getAllRequests = async (): Promise<Request[]> => {
   try {
-    const { data, error } = await supabase
-      .from('reservations')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    if (!data) return null;
-    
-    return {
-      id: data.id,
-      type: 'room',
-      status: data.status,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-      userId: data.user_id,
-      userName: data.user_id,
-      roomId: data.room_id,
-      roomName: data.room_id,
-      equipmentId: data.equipment_id,
-      equipmentName: data.equipment_id,
-      equipmentQuantity: data.equipment_quantity,
-      classId: data.class_id || '',
-      className: data.class_name || '',
-      startTime: data.start_time,
-      endTime: data.end_time,
-      date: data.start_time?.split('T')[0] || '',
-      notes: data.purpose || '',
-      requires_commander_approval: data.requires_commander_approval,
-      adminApproval: null,
-      supervisorApproval: null,
-      returnInfo: null
-    };
+    // This is a mock implementation
+    return [
+      {
+        id: '1',
+        type: 'room',
+        status: 'pending',
+        createdAt: '2023-05-01T10:00:00Z',
+        updatedAt: '2023-05-01T10:00:00Z',
+        userId: '1',
+        userName: 'Teacher 1',
+        roomId: '1',
+        roomName: 'Room 101',
+        date: '2023-05-10',
+        startTime: '09:00',
+        endTime: '11:00',
+        classId: '1',
+        className: 'Class A',
+        notes: 'Need projector',
+        requires_commander_approval: false,
+        adminApproval: null,
+        supervisorApproval: null,
+        returnInfo: null
+      }
+    ];
   } catch (error) {
-    console.error(`Error fetching request ${id}:`, error);
-    return null;
-  }
-};
-
-export const getRequests = async (): Promise<Request[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('reservations')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    
-    return data.map(req => ({
-      id: req.id,
-      type: 'room',
-      status: req.status,
-      createdAt: req.created_at,
-      updatedAt: req.updated_at,
-      userId: req.user_id,
-      userName: req.user_id,
-      roomId: req.room_id,
-      roomName: req.room_id,
-      equipmentId: req.equipment_id,
-      equipmentName: req.equipment_id,
-      equipmentQuantity: req.equipment_quantity,
-      classId: req.class_id || '',
-      className: req.class_name || '',
-      startTime: req.start_time,
-      endTime: req.end_time,
-      date: req.start_time?.split('T')[0] || '',
-      notes: req.purpose || '',
-      requires_commander_approval: req.requires_commander_approval,
-      adminApproval: null,
-      supervisorApproval: null,
-      returnInfo: null
-    }));
-  } catch (error) {
-    console.error('Error fetching requests:', error);
-    return [];
-  }
-};
-
-export const getRequestsByUserId = async (userId: string): Promise<Request[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('reservations')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    
-    return data.map(req => ({
-      id: req.id,
-      type: 'room',
-      status: req.status,
-      createdAt: req.created_at,
-      updatedAt: req.updated_at,
-      userId: req.user_id,
-      userName: req.user_id,
-      roomId: req.room_id,
-      roomName: req.room_id,
-      equipmentId: req.equipment_id,
-      equipmentName: req.equipment_id,
-      equipmentQuantity: req.equipment_quantity,
-      classId: req.class_id || '',
-      className: req.class_name || '',
-      startTime: req.start_time,
-      endTime: req.end_time,
-      date: req.start_time?.split('T')[0] || '',
-      notes: req.purpose || '',
-      requires_commander_approval: req.requires_commander_approval,
-      adminApproval: null,
-      supervisorApproval: null,
-      returnInfo: null
-    }));
-  } catch (error) {
-    console.error(`Error fetching requests for user ${userId}:`, error);
+    console.error('Error fetching all requests:', error);
     return [];
   }
 };
 
 export const getRequestsByStatus = async (status: RequestStatus): Promise<Request[]> => {
   try {
-    const { data, error } = await supabase
-      .from('reservations')
-      .select('*')
-      .eq('status', status)
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    
-    return data.map(req => ({
-      id: req.id,
-      type: 'room',
-      status: req.status,
-      createdAt: req.created_at,
-      updatedAt: req.updated_at,
-      userId: req.user_id,
-      userName: req.user_id,
-      roomId: req.room_id,
-      roomName: req.room_id,
-      equipmentId: req.equipment_id,
-      equipmentName: req.equipment_id,
-      equipmentQuantity: req.equipment_quantity,
-      classId: req.class_id || '',
-      className: req.class_name || '',
-      startTime: req.start_time,
-      endTime: req.end_time,
-      date: req.start_time?.split('T')[0] || '',
-      notes: req.purpose || '',
-      requires_commander_approval: req.requires_commander_approval,
-      adminApproval: null,
-      supervisorApproval: null,
-      returnInfo: null
-    }));
+    // This is a mock implementation
+    const allRequests = await getAllRequests();
+    return allRequests.filter(request => request.status === status);
   } catch (error) {
-    console.error(`Error fetching requests with status ${status}:`, error);
+    console.error(`Error fetching requests by status (${status}):`, error);
     return [];
   }
 };
 
-export const createRequest = async (request: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<Request> => {
+export const getRequestsByUserId = async (userId: string): Promise<Request[]> => {
   try {
-    const validStatus = convertRequestStatus(request.status);
-    
-    const { data, error } = await supabase
-      .from('reservations')
-      .insert({
-        user_id: request.userId,
-        room_id: request.roomId,
-        equipment_id: request.equipmentId,
-        equipment_quantity: request.equipmentQuantity,
-        class_id: request.classId,
-        class_name: request.className,
-        start_time: request.startTime,
-        end_time: request.endTime,
-        purpose: request.notes,
-        status: validStatus,
-        requires_commander_approval: request.requires_commander_approval
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
+    // This is a mock implementation
+    const allRequests = await getAllRequests();
+    return allRequests.filter(request => request.userId === userId);
+  } catch (error) {
+    console.error(`Error fetching requests for user ${userId}:`, error);
+    return [];
+  }
+};
+
+export const getRequestById = async (id: string): Promise<Request | null> => {
+  try {
+    // This is a mock implementation
+    const allRequests = await getAllRequests();
+    return allRequests.find(request => request.id === id) || null;
+  } catch (error) {
+    console.error(`Error fetching request ${id}:`, error);
+    return null;
+  }
+};
+
+export const getRequestsByRoomId = async (roomId: string, date: string): Promise<Request[]> => {
+  try {
+    // This is a mock implementation
+    const allRequests = await getAllRequests();
+    return allRequests.filter(
+      request => 
+        request.roomId === roomId && 
+        request.date === date && 
+        request.status === 'approved'
+    );
+  } catch (error) {
+    console.error(`Error fetching requests for room ${roomId} on ${date}:`, error);
+    return [];
+  }
+};
+
+export const getRequestsByEquipmentId = async (equipmentId: string, date: string): Promise<Request[]> => {
+  try {
+    // This is a mock implementation
+    const allRequests = await getAllRequests();
+    return allRequests.filter(
+      request => 
+        request.equipmentId === equipmentId && 
+        request.date === date && 
+        request.status === 'approved'
+    );
+  } catch (error) {
+    console.error(`Error fetching requests for equipment ${equipmentId} on ${date}:`, error);
+    return [];
+  }
+};
+
+export const addRoomRequest = async (
+  request: Omit<Request, 'id' | 'type' | 'status' | 'createdAt' | 'updatedAt' | 'adminApproval' | 'supervisorApproval' | 'returnInfo' | 'equipmentId' | 'equipmentName' | 'equipmentQuantity' | 'documentName' | 'pageCount' | 'colorPrint' | 'doubleSided' | 'copies' | 'pdfFileName'>
+): Promise<Request | null> => {
+  try {
+    // This is a mock implementation
     return {
-      id: data.id,
+      id: Math.random().toString(36).substring(2, 11),
       type: 'room',
-      status: data.status,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-      userId: data.user_id,
-      userName: data.user_id,
-      roomId: data.room_id,
-      roomName: data.room_id,
-      equipmentId: data.equipment_id,
-      equipmentName: data.equipment_id,
-      equipmentQuantity: data.equipment_quantity,
-      classId: data.class_id || '',
-      className: data.class_name || '',
-      startTime: data.start_time,
-      endTime: data.end_time,
-      date: data.start_time?.split('T')[0] || '',
-      notes: data.purpose || '',
-      requires_commander_approval: data.requires_commander_approval,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       adminApproval: null,
       supervisorApproval: null,
-      returnInfo: null
+      returnInfo: null,
+      equipmentId: null,
+      equipmentName: null,
+      equipmentQuantity: null,
+      documentName: null,
+      pageCount: null,
+      colorPrint: null,
+      doubleSided: null,
+      copies: null,
+      pdfFileName: null,
+      ...request
     };
   } catch (error) {
-    console.error('Error creating request:', error);
+    console.error('Error adding room request:', error);
     throw error;
   }
 };
 
-export const updateRequest = async (
+export const addEquipmentRequest = async (
+  request: Omit<Request, 'id' | 'type' | 'status' | 'createdAt' | 'updatedAt' | 'adminApproval' | 'supervisorApproval' | 'returnInfo' | 'roomId' | 'roomName' | 'documentName' | 'pageCount' | 'colorPrint' | 'doubleSided' | 'copies' | 'pdfFileName'>
+): Promise<Request | null> => {
+  try {
+    // In a real implementation, we would check equipment availability
+    const equipment = await getEquipment(request.equipmentId);
+    
+    if (!equipment || equipment.available < request.equipmentQuantity) {
+      throw new Error('Equipment not available in requested quantity');
+    }
+
+    // This is a mock implementation
+    return {
+      id: Math.random().toString(36).substring(2, 11),
+      type: 'equipment',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      adminApproval: null,
+      supervisorApproval: null,
+      returnInfo: null,
+      roomId: null,
+      roomName: null,
+      documentName: null,
+      pageCount: null,
+      colorPrint: null,
+      doubleSided: null,
+      copies: null,
+      pdfFileName: null,
+      ...request
+    };
+  } catch (error) {
+    console.error('Error adding equipment request:', error);
+    throw error;
+  }
+};
+
+export const addPrintingRequest = async (
+  request: Omit<Request, 'id' | 'type' | 'status' | 'createdAt' | 'updatedAt' | 'adminApproval' | 'supervisorApproval' | 'returnInfo' | 'roomId' | 'roomName' | 'equipmentId' | 'equipmentName' | 'equipmentQuantity' | 'startTime' | 'endTime'>
+): Promise<Request | null> => {
+  try {
+    // This is a mock implementation
+    return {
+      id: Math.random().toString(36).substring(2, 11),
+      type: 'printing',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      adminApproval: null,
+      supervisorApproval: null,
+      returnInfo: null,
+      roomId: null,
+      roomName: null,
+      equipmentId: null,
+      equipmentName: null,
+      equipmentQuantity: null,
+      startTime: null,
+      endTime: null,
+      ...request
+    };
+  } catch (error) {
+    console.error('Error adding printing request:', error);
+    throw error;
+  }
+};
+
+export const updateRequestStatus = async (
   id: string, 
-  status: RequestStatus, 
-  userId: string, 
-  userName: string, 
+  status: RequestStatus,
+  approverId?: string,
+  approverName?: string,
   notes?: string
-): Promise<Request> => {
+): Promise<Request | null> => {
   try {
-    const validStatus = convertRequestStatus(status);
+    // This is a mock implementation
+    const request = await getRequestById(id);
     
-    const updatedRequest: Record<string, any> = {
-      status: validStatus,
-      updated_at: new Date().toISOString()
-    };
-
-    const { data, error } = await supabase
-      .from('reservations')
-      .update(updatedRequest)
-      .eq('id', id)
-      .select()
-      .single();
+    if (!request) {
+      throw new Error(`Request with ID ${id} not found`);
+    }
     
-    if (error) throw error;
-    
-    return {
-      id: data.id,
-      type: 'room',
-      status: data.status,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-      userId: data.user_id,
-      userName: data.user_id,
-      roomId: data.room_id,
-      roomName: data.room_id,
-      equipmentId: data.equipment_id,
-      equipmentName: data.equipment_id,
-      equipmentQuantity: data.equipment_quantity,
-      classId: data.class_id || '',
-      className: data.class_name || '',
-      startTime: data.start_time,
-      endTime: data.end_time,
-      date: data.start_time?.split('T')[0] || '',
-      notes: data.purpose || '',
-      requires_commander_approval: data.requires_commander_approval,
-      adminApproval: null,
-      supervisorApproval: null,
-      returnInfo: null
-    };
-  } catch (error) {
-    console.error(`Error updating request ${id}:`, error);
-    throw error;
-  }
-};
-
-export const returnEquipment = async (
-  requestId: string, 
-  userId: string, 
-  userName: string, 
-  notes?: string
-): Promise<void> => {
-  try {
-    await updateRequest(requestId, 'returned', userId, userName, notes);
-    
-    const request = await getRequest(requestId);
-    if (request?.equipmentId && request.equipmentQuantity) {
-      const equipment = await getEquipmentById(request.equipmentId);
+    // Handle equipment reservation/return
+    if (request.type === 'equipment' && request.equipmentId && request.equipmentQuantity) {
+      const equipment = await getEquipment(request.equipmentId);
+      
       if (equipment) {
-        await updateEquipment({
-          ...equipment,
-          available: equipment.available + request.equipmentQuantity
-        });
+        if (status === 'approved') {
+          // Reduce available equipment
+          await updateEquipment({
+            id: equipment.id,
+            available: Math.max(0, equipment.available - request.equipmentQuantity)
+          });
+        } else if (request.status === 'approved' && (status === 'rejected' || status === 'returned')) {
+          // Return equipment to inventory
+          await updateEquipment({
+            id: equipment.id,
+            available: equipment.available + request.equipmentQuantity
+          });
+        }
       }
     }
+    
+    const updatedRequest: Request = {
+      ...request,
+      status,
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Add approval information
+    if (status === 'admin_approved' && approverId && approverName) {
+      updatedRequest.adminApproval = {
+        userId: approverId,
+        userName: approverName,
+        timestamp: new Date().toISOString(),
+        notes: notes || ''
+      };
+    } else if (status === 'approved' && approverId && approverName) {
+      updatedRequest.supervisorApproval = {
+        userId: approverId,
+        userName: approverName,
+        timestamp: new Date().toISOString(),
+        notes: notes || ''
+      };
+    } else if (status === 'returned' && approverId && approverName) {
+      updatedRequest.returnInfo = {
+        userId: approverId,
+        userName: approverName,
+        timestamp: new Date().toISOString(),
+        notes: notes || ''
+      };
+    }
+    
+    return updatedRequest;
   } catch (error) {
-    console.error(`Error returning equipment for request ${requestId}:`, error);
+    console.error(`Error updating request ${id} status to ${status}:`, error);
     throw error;
+  }
+};
+
+export const getEquipment = async (id: string) => {
+  try {
+    return {
+      id,
+      name: "Equipment",
+      available: 10,
+      category: "Category"
+    };
+  } catch (error) {
+    console.error(`Error fetching equipment ${id}:`, error);
+    return null;
   }
 };
