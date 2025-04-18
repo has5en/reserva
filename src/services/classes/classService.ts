@@ -1,6 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Class } from '@/data/models';
+import { toast } from '@/components/ui/use-toast';
 
 export const getClasses = async (): Promise<Class[]> => {
   try {
@@ -8,7 +8,15 @@ export const getClasses = async (): Promise<Class[]> => {
       .from('classes')
       .select('*');
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching classes:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur lors du chargement des classes",
+        description: error.message
+      });
+      throw error;
+    }
     
     // Transform the data to match the Class interface
     return (data || []).map(item => ({
@@ -58,12 +66,24 @@ export const getClassById = async (id: string): Promise<Class | null> => {
 
 export const getClassesByDepartment = async (departmentId: string): Promise<Class[]> => {
   try {
+    if (departmentId === 'all') {
+      return getClasses();
+    }
+    
     const { data, error } = await supabase
       .from('classes')
       .select('*')
       .eq('department_id', departmentId);
     
-    if (error) throw error;
+    if (error) {
+      console.error(`Error fetching classes for department ${departmentId}:`, error);
+      toast({
+        variant: "destructive",
+        title: "Erreur lors du chargement des classes",
+        description: error.message
+      });
+      throw error;
+    }
     
     // Transform the data to match the Class interface
     return (data || []).map(item => ({
@@ -112,11 +132,10 @@ export const getClassesByTeacher = async (teacherId: string): Promise<Class[]> =
 };
 
 export const getTeacherClassesForReservation = async (teacherId: string): Promise<Class[]> => {
-  // This is a mock implementation, reusing the getClassesByTeacher function
   return getClassesByTeacher(teacherId);
 };
 
-export const addClass = async (classData: Omit<Class, 'id'>): Promise<void> => {
+export const addClass = async (classData: Omit<Class, 'id'>): Promise<Class | null> => {
   console.log('Adding class:', classData);
   
   // Transform the data to match the database schema
@@ -128,18 +147,44 @@ export const addClass = async (classData: Omit<Class, 'id'>): Promise<void> => {
   };
   
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('classes')
-      .insert(dbData);
+      .insert(dbData)
+      .select()
+      .single();
       
-    if (error) throw error;
+    if (error) {
+      console.error('Error adding class:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur lors de l'ajout de la classe",
+        description: error.message
+      });
+      throw error;
+    }
+    
+    toast({
+      title: "Classe ajoutée",
+      description: `${classData.name} a été ajoutée avec succès.`
+    });
+    
+    // Transform the data to match the Class interface
+    return {
+      id: data.id,
+      name: data.name,
+      studentCount: data.student_count,
+      departmentId: data.department_id,
+      unit: data.unit,
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
   } catch (error) {
     console.error('Error adding class:', error);
     throw error;
   }
 };
 
-export const updateClass = async (classData: Partial<Class> & { id: string }): Promise<void> => {
+export const updateClass = async (classData: Partial<Class> & { id: string }): Promise<Class | null> => {
   console.log(`Updating class ${classData.id}:`, classData);
   
   // Transform the data to match the database schema
@@ -150,12 +195,38 @@ export const updateClass = async (classData: Partial<Class> & { id: string }): P
   if (classData.unit) dbData.unit = classData.unit;
   
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('classes')
       .update(dbData)
-      .eq('id', classData.id);
+      .eq('id', classData.id)
+      .select()
+      .single();
       
-    if (error) throw error;
+    if (error) {
+      console.error(`Error updating class ${classData.id}:`, error);
+      toast({
+        variant: "destructive",
+        title: "Erreur lors de la mise à jour de la classe",
+        description: error.message
+      });
+      throw error;
+    }
+    
+    toast({
+      title: "Classe mise à jour",
+      description: `${classData.name} a été mise à jour avec succès.`
+    });
+    
+    // Transform the data to match the Class interface
+    return {
+      id: data.id,
+      name: data.name,
+      studentCount: data.student_count,
+      departmentId: data.department_id,
+      unit: data.unit,
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
   } catch (error) {
     console.error(`Error updating class ${classData.id}:`, error);
     throw error;
@@ -177,7 +248,20 @@ export const deleteClass = async (id: string): Promise<void> => {
       .delete()
       .eq('id', id);
       
-    if (error) throw error;
+    if (error) {
+      console.error(`Error deleting class ${id}:`, error);
+      toast({
+        variant: "destructive",
+        title: "Erreur lors de la suppression de la classe",
+        description: error.message
+      });
+      throw error;
+    }
+    
+    toast({
+      title: "Classe supprimée",
+      description: "La classe a été supprimée avec succès."
+    });
   } catch (error) {
     console.error(`Error deleting class ${id}:`, error);
     throw error;

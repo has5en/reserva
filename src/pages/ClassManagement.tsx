@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,10 +33,11 @@ type DepartmentFormValues = z.infer<typeof departmentFormSchema>;
 type ClassFormValues = z.infer<typeof classFormSchema>;
 
 const ClassManagement = () => {
-  const { hasRole } = useAuth();
+  const { hasRole, currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('departments');
   const [departments, setDepartments] = useState<Department[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [isAddDepartmentDialogOpen, setIsAddDepartmentDialogOpen] = useState(false);
@@ -44,7 +46,7 @@ const ClassManagement = () => {
   const [isAddClassDialogOpen, setIsAddClassDialogOpen] = useState(false);
   const [isEditClassDialogOpen, setIsEditClassDialogOpen] = useState(false);
   const [isDeleteClassDialogOpen, setIsDeleteClassDialogOpen] = useState(false);
-  const [filterDepartmentId, setFilterDepartmentId] = useState<string>('');
+  const [filterDepartmentId, setFilterDepartmentId] = useState<string>("all");
 
   const canEdit = hasRole('admin') || hasRole('supervisor');
 
@@ -67,9 +69,18 @@ const ClassManagement = () => {
   });
 
   useEffect(() => {
+    if (!currentUser) {
+      toast({
+        variant: "destructive",
+        title: "Authentification requise",
+        description: "Vous devez être connecté pour accéder à cette page."
+      });
+      return;
+    }
+    
     fetchDepartments();
     fetchClasses();
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     if (filterDepartmentId) {
@@ -80,6 +91,7 @@ const ClassManagement = () => {
   }, [filterDepartmentId]);
 
   const fetchDepartments = async () => {
+    setIsLoading(true);
     try {
       const data = await getDepartments();
       setDepartments(data);
@@ -90,10 +102,13 @@ const ClassManagement = () => {
         title: "Erreur",
         description: "Impossible de charger les départements."
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const fetchClasses = async () => {
+    setIsLoading(true);
     try {
       const data = await getClasses();
       setClasses(data);
@@ -104,10 +119,13 @@ const ClassManagement = () => {
         title: "Erreur",
         description: "Impossible de charger les classes."
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const fetchClassesByDepartmentId = async (departmentId: string) => {
+    setIsLoading(true);
     try {
       const data = await getClassesByDepartment(departmentId);
       setClasses(data);
@@ -118,6 +136,8 @@ const ClassManagement = () => {
         title: "Erreur",
         description: "Impossible de charger les classes pour ce département."
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -128,18 +148,11 @@ const ClassManagement = () => {
         description: data.description
       });
       await fetchDepartments();
-      toast({
-        title: "Département ajouté",
-        description: `${data.name} a été ajouté avec succès.`,
-      });
       setIsAddDepartmentDialogOpen(false);
       departmentForm.reset();
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur s'est produite lors de l'ajout du département.",
-      });
+      console.error('Error adding department:', error);
+      // Error toast is handled in the service
     }
   };
 
@@ -153,19 +166,12 @@ const ClassManagement = () => {
         description: data.description,
       });
       await fetchDepartments();
-      toast({
-        title: "Département mis à jour",
-        description: `${data.name} a été mis à jour avec succès.`,
-      });
       setIsEditDepartmentDialogOpen(false);
       setSelectedDepartment(null);
       departmentForm.reset();
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur s'est produite lors de la mise à jour du département.",
-      });
+      console.error('Error updating department:', error);
+      // Error toast is handled in the service
     }
   };
 
@@ -175,18 +181,14 @@ const ClassManagement = () => {
     try {
       await deleteDepartment(selectedDepartment.id);
       await fetchDepartments();
-      toast({
-        title: "Département supprimé",
-        description: `${selectedDepartment.name} a été supprimé avec succès.`,
-      });
       setIsDeleteDepartmentDialogOpen(false);
       setSelectedDepartment(null);
+      
+      // Also refresh classes as they might reference this department
+      fetchClasses();
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur s'est produite lors de la suppression du département.",
-      });
+      console.error('Error deleting department:', error);
+      // Error toast is handled in the service
     }
   };
 
@@ -205,18 +207,11 @@ const ClassManagement = () => {
         await fetchClasses();
       }
       
-      toast({
-        title: "Classe ajoutée",
-        description: `${data.name} a été ajoutée avec succès.`,
-      });
       setIsAddClassDialogOpen(false);
       classForm.reset();
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur s'est produite lors de l'ajout de la classe.",
-      });
+      console.error('Error adding class:', error);
+      // Error toast is handled in the service
     }
   };
 
@@ -238,19 +233,12 @@ const ClassManagement = () => {
         await fetchClasses();
       }
       
-      toast({
-        title: "Classe mise à jour",
-        description: `${data.name} a été mise à jour avec succès.`,
-      });
       setIsEditClassDialogOpen(false);
       setSelectedClass(null);
       classForm.reset();
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur s'est produite lors de la mise à jour de la classe.",
-      });
+      console.error('Error updating class:', error);
+      // Error toast is handled in the service
     }
   };
 
@@ -266,18 +254,11 @@ const ClassManagement = () => {
         await fetchClasses();
       }
     
-      toast({
-        title: "Classe supprimée",
-        description: `${selectedClass.name} a été supprimée avec succès.`,
-      });
       setIsDeleteClassDialogOpen(false);
       setSelectedClass(null);
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur s'est produite lors de la suppression de la classe.",
-      });
+      console.error('Error deleting class:', error);
+      // Error toast is handled in the service
     }
   };
 
@@ -331,7 +312,11 @@ const ClassManagement = () => {
               )}
             </div>
             
-            {departments.length === 0 ? (
+            {isLoading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Chargement des départements...</p>
+              </div>
+            ) : departments.length === 0 ? (
               <div className="text-center py-8 bg-muted rounded-md">
                 <p className="text-muted-foreground">
                   Aucun département trouvé.
@@ -354,6 +339,17 @@ const ClassManagement = () => {
                         <TableCell>{department.description || '-'}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setFilterDepartmentId(department.id);
+                                setActiveTab('classes');
+                              }}
+                            >
+                              <Users className="h-4 w-4 mr-1" />
+                              Classes
+                            </Button>
                             {canEdit && (
                               <>
                                 <Button
@@ -410,7 +406,11 @@ const ClassManagement = () => {
               </div>
             </div>
             
-            {classes.length === 0 ? (
+            {isLoading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Chargement des classes...</p>
+              </div>
+            ) : classes.length === 0 ? (
               <div className="text-center py-8 bg-muted rounded-md">
                 <p className="text-muted-foreground">
                   Aucune classe trouvée.
