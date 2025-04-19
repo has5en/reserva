@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -86,6 +87,46 @@ export const uploadProfilePhoto = async (userId: string, file: File): Promise<st
   }
 };
 
+// Mettre à jour le profil utilisateur
+export const updateUserProfile = async (userId: string, profileData: { 
+  full_name?: string; 
+  email?: string; 
+  telephone?: string;
+  department?: string;
+  unit?: string;
+  rank?: string;
+}) => {
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        ...profileData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+    
+    if (error) {
+      console.error('Error updating user profile:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur lors de la mise à jour du profil",
+        description: error.message
+      });
+      throw error;
+    }
+    
+    toast({
+      title: "Profil mis à jour",
+      description: "Votre profil a été mis à jour avec succès."
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    return false;
+  }
+};
+
 // Récupérer les données d'un profil utilisateur
 export const getUserProfile = async (userId: string) => {
   try {
@@ -104,5 +145,34 @@ export const getUserProfile = async (userId: string) => {
   } catch (error) {
     console.error('Error fetching user profile:', error);
     return null;
+  }
+};
+
+// Mettre à jour le mot de passe utilisateur
+export const updateUserPassword = async (newPassword: string) => {
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    
+    if (error) {
+      console.error('Error updating password:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur lors de la mise à jour du mot de passe",
+        description: error.message
+      });
+      throw error;
+    }
+    
+    toast({
+      title: "Mot de passe mis à jour",
+      description: "Votre mot de passe a été mis à jour avec succès."
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error updating password:', error);
+    return false;
   }
 };

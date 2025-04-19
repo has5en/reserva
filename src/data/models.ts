@@ -140,5 +140,6 @@ export interface User {
   departments?: string[] | null;
   unit?: string | null;
   rank?: string | null;
+  telephone?: string | null;
   password?: string; // Added for MockUser compatibility
 }

@@ -22,6 +22,7 @@ import AdminStats from "./pages/AdminStats";
 import SupervisorStats from "./pages/SupervisorStats";
 import UserManagement from "./pages/UserManagement";
 import ClassManagement from "./pages/ClassManagement";
+import UserProfile from "./pages/UserProfile";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/request/:id" element={<RequestDetails />} />
+                <Route path="/profile" element={<UserProfile />} />
               </Route>
               
               {/* Teacher-specific routes */}
