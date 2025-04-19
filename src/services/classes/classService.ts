@@ -83,6 +83,180 @@ export const getClassesByDepartment = async (departmentId: string): Promise<Clas
   }
 };
 
+// Add the missing functions
+
+export const getClassById = async (id: string): Promise<Class | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('classes')
+      .select(`
+        *,
+        departments (name)
+      `)
+      .eq('id', id)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error fetching class by ID:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur lors du chargement de la classe",
+        description: error.message
+      });
+      throw error;
+    }
+    
+    if (!data) return null;
+    
+    // Format data to match Class model
+    return {
+      id: data.id,
+      name: data.name,
+      departmentId: data.department_id,
+      department: data.departments?.name || '',
+      studentCount: data.student_count,
+      unit: data.unit,
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
+  } catch (error) {
+    console.error('Error fetching class by ID:', error);
+    return null;
+  }
+};
+
+export const getClassesByTeacher = async (teacherId: string): Promise<Class[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('teacher_classes')
+      .select(`
+        classes (
+          *,
+          departments (name)
+        )
+      `)
+      .eq('teacher_id', teacherId);
+    
+    if (error) {
+      console.error('Error fetching classes by teacher:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur lors du chargement des classes",
+        description: error.message
+      });
+      throw error;
+    }
+    
+    // Format data to match Class model
+    return (data || []).map(item => ({
+      id: item.classes.id,
+      name: item.classes.name,
+      departmentId: item.classes.department_id,
+      department: item.classes.departments?.name || '',
+      studentCount: item.classes.student_count,
+      unit: item.classes.unit,
+      created_at: item.classes.created_at,
+      updated_at: item.classes.updated_at
+    }));
+  } catch (error) {
+    console.error('Error fetching classes by teacher:', error);
+    return [];
+  }
+};
+
+export const getTeacherClassesForReservation = async (teacherId: string): Promise<Class[]> => {
+  // This function could have specific filtering for reservation scenarios
+  // For now, we'll reuse the getClassesByTeacher function
+  return getClassesByTeacher(teacherId);
+};
+
+export const addTeacherClass = async (teacherId: string, classId: string): Promise<boolean> => {
+  try {
+    // Vérifier si l'utilisateur est connecté
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !sessionData.session) {
+      console.error('Authentication error:', sessionError);
+      toast({
+        variant: "destructive",
+        title: "Erreur d'authentification",
+        description: "Vous devez être connecté pour effectuer cette action."
+      });
+      return false;
+    }
+    
+    const { error } = await supabase
+      .from('teacher_classes')
+      .insert({
+        teacher_id: teacherId,
+        class_id: classId
+      });
+    
+    if (error) {
+      console.error('Error adding teacher class:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur lors de l'ajout de la classe",
+        description: error.message
+      });
+      throw error;
+    }
+    
+    toast({
+      title: "Classe assignée",
+      description: "La classe a été assignée à l'enseignant avec succès."
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error adding teacher class:', error);
+    return false;
+  }
+};
+
+export const removeClass = async (teacherId: string, classId: string): Promise<boolean> => {
+  try {
+    // Vérifier si l'utilisateur est connecté
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !sessionData.session) {
+      console.error('Authentication error:', sessionError);
+      toast({
+        variant: "destructive",
+        title: "Erreur d'authentification",
+        description: "Vous devez être connecté pour effectuer cette action."
+      });
+      return false;
+    }
+    
+    const { error } = await supabase
+      .from('teacher_classes')
+      .delete()
+      .eq('teacher_id', teacherId)
+      .eq('class_id', classId);
+    
+    if (error) {
+      console.error('Error removing class from teacher:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur lors de la suppression de la classe",
+        description: error.message
+      });
+      throw error;
+    }
+    
+    toast({
+      title: "Classe retirée",
+      description: "La classe a été retirée de l'enseignant avec succès."
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error removing class from teacher:', error);
+    return false;
+  }
+};
+
 export const addClass = async (classData: { name: string; departmentId: string; studentCount: number; unit?: string }): Promise<Class | null> => {
   try {
     // Vérifier si l'utilisateur est connecté
