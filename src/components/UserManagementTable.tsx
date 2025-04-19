@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { User, UserRole } from '@/data/models';
@@ -111,7 +112,9 @@ const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
       if (data.photo && data.photo.length > 0) {
         const photo = data.photo[0];
         console.log("Uploading photo:", photo.name);
-        await uploadProfilePhoto(photo);
+        // Fix: Pass the userId as the second argument (using a temporary ID for new users)
+        const tempUserId = 'new-user-temp-id'; // This would be replaced with the actual user ID in a real implementation
+        await uploadProfilePhoto(photo, tempUserId);
       }
       
       await fetchUsers();
@@ -152,7 +155,8 @@ const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
       if (data.photo && data.photo.length > 0) {
         const photo = data.photo[0];
         console.log("Uploading photo:", photo.name);
-        await uploadProfilePhoto(photo);
+        // Fix: Pass the userId as the second argument
+        await uploadProfilePhoto(photo, selectedUser.id);
       }
       
       if (userRole === 'teacher' && data.classes && data.classes.length > 0) {
