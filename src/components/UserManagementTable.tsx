@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
-import { User, useAuth, UserRole } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { User, UserRole } from '@/data/models';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -61,11 +61,10 @@ const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
     try {
       setIsLoading(true);
       const data = await getUsersByRole(userRole);
-      // Map the profile data to User format - note that profiles don't have email directly
       const formattedUsers: User[] = data.map(profile => ({
         id: profile.id,
         name: profile.full_name || '',
-        email: profile.id, // Using id as email temporarily since profile doesn't have email
+        email: profile.id,
         role: profile.role as UserRole,
         avatar_url: profile.avatar_url,
       }));
@@ -99,7 +98,6 @@ const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
   const handleCreateUser = async (data: UserFormValues) => {
     try {
       setIsLoading(true);
-      // Using console.log for now since createUser function isn't implemented
       console.log("Creating user:", {
         email: data.email,
         password: data.password,
@@ -108,14 +106,12 @@ const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
         classes: data.classes,
       });
       
-      // Simulate success for now
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Handle photo upload if provided
       if (data.photo && data.photo.length > 0) {
         const photo = data.photo[0];
         console.log("Uploading photo:", photo.name);
-        // uploadProfilePhoto would be implemented once user creation is functional
+        await uploadProfilePhoto(photo);
       }
       
       await fetchUsers();
@@ -143,7 +139,6 @@ const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
 
     try {
       setIsLoading(true);
-      // Using console.log for now since updateUser function isn't implemented
       console.log("Updating user:", {
         id: selectedUser.id,
         email: data.email,
@@ -152,17 +147,14 @@ const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
         classes: data.classes,
       });
       
-      // Simulate success for now
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Handle photo upload if provided
       if (data.photo && data.photo.length > 0) {
         const photo = data.photo[0];
         console.log("Uploading photo:", photo.name);
-        // uploadProfilePhoto would be implemented once user update is functional
+        await uploadProfilePhoto(photo);
       }
       
-      // Assign classes to teacher if applicable
       if (userRole === 'teacher' && data.classes && data.classes.length > 0) {
         await assignClassesToTeacher(selectedUser.id, data.classes);
       }
@@ -193,10 +185,8 @@ const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
 
     try {
       setIsLoading(true);
-      // Using console.log for now since deleteUser function isn't implemented
       console.log("Deleting user:", selectedUser.id);
       
-      // Simulate success for now
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       await fetchUsers();
@@ -222,7 +212,6 @@ const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
     setSelectedUser(user);
     setPhotoPreview(user.avatar_url || null);
 
-    // Récupérer les classes de l'enseignant si c'est un enseignant
     let teacherClasses: string[] = [];
     if (userRole === 'teacher') {
       const teacherClassesData = await getTeacherClasses(user.id);
@@ -232,7 +221,7 @@ const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
     form.reset({
       name: user.name,
       email: user.email,
-      password: '', // Le mot de passe ne doit pas être pré-rempli
+      password: '',
       classes: teacherClasses,
     });
     setIsEditDialogOpen(true);
@@ -247,7 +236,6 @@ const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
     const files = event.target.files;
     if (files && files.length > 0) {
       const file = files[0];
-      // Prévisualiser l'image
       const reader = new FileReader();
       reader.onload = (e) => {
         setPhotoPreview(e.target?.result as string);
@@ -335,7 +323,6 @@ const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
         </div>
       )}
 
-      {/* Dialog pour ajouter un utilisateur */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -449,7 +436,6 @@ const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog pour modifier un utilisateur */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -550,7 +536,6 @@ const UserManagementTable = ({ userRole }: { userRole: UserRole }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog pour supprimer un utilisateur */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>

@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import { useAuth, UserRole } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { UserRole } from '@/data/models';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import UserManagementTable from '@/components/UserManagementTable';
 

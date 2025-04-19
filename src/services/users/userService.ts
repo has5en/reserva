@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { UserRole } from '@/contexts/AuthContext';
+import { UserRole } from '@/data/models';
 
 export const getUsersByRole = async (role: UserRole) => {
   try {
