@@ -7,10 +7,7 @@ export const getClasses = async (): Promise<Class[]> => {
   try {
     const { data, error } = await supabase
       .from('classes')
-      .select(`
-        *,
-        departments (name)
-      `)
+      .select('*')
       .order('name');
     
     if (error) {
@@ -27,8 +24,8 @@ export const getClasses = async (): Promise<Class[]> => {
     return (data || []).map(item => ({
       id: item.id,
       name: item.name,
-      departmentId: item.department_id,
-      department: item.departments?.name || '',
+      department: item.department || '',
+      departmentId: '', // Maintenu pour compatibilité
       studentCount: item.student_count,
       unit: item.unit,
       created_at: item.created_at,
@@ -40,59 +37,11 @@ export const getClasses = async (): Promise<Class[]> => {
   }
 };
 
-export const getClassesByDepartment = async (departmentId: string): Promise<Class[]> => {
-  // Si 'all' est sélectionné, retourner toutes les classes
-  if (departmentId === 'all') {
-    return getClasses();
-  }
-  
-  try {
-    const { data, error } = await supabase
-      .from('classes')
-      .select(`
-        *,
-        departments (name)
-      `)
-      .eq('department_id', departmentId)
-      .order('name');
-    
-    if (error) {
-      console.error('Error fetching classes by department:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur lors du chargement des classes",
-        description: error.message
-      });
-      throw error;
-    }
-    
-    // Format data to match Class model
-    return (data || []).map(item => ({
-      id: item.id,
-      name: item.name,
-      departmentId: item.department_id,
-      department: item.departments?.name || '',
-      studentCount: item.student_count,
-      unit: item.unit,
-      created_at: item.created_at,
-      updated_at: item.updated_at
-    }));
-  } catch (error) {
-    console.error('Error fetching classes by department:', error);
-    return [];
-  }
-};
-
-// Add the missing functions
-
 export const getClassById = async (id: string): Promise<Class | null> => {
   try {
     const { data, error } = await supabase
       .from('classes')
-      .select(`
-        *,
-        departments (name)
-      `)
+      .select('*')
       .eq('id', id)
       .maybeSingle();
     
@@ -112,8 +61,8 @@ export const getClassById = async (id: string): Promise<Class | null> => {
     return {
       id: data.id,
       name: data.name,
-      departmentId: data.department_id,
-      department: data.departments?.name || '',
+      department: data.department || '',
+      departmentId: '', // Maintenu pour compatibilité
       studentCount: data.student_count,
       unit: data.unit,
       created_at: data.created_at,
@@ -125,15 +74,17 @@ export const getClassById = async (id: string): Promise<Class | null> => {
   }
 };
 
+export const getClassesByDepartment = async (departmentId: string): Promise<Class[]> => {
+  // Comme nous avons supprimé les départements, cette fonction retourne toutes les classes
+  return getClasses();
+};
+
 export const getClassesByTeacher = async (teacherId: string): Promise<Class[]> => {
   try {
     const { data, error } = await supabase
       .from('teacher_classes')
       .select(`
-        classes (
-          *,
-          departments (name)
-        )
+        classes (*)
       `)
       .eq('teacher_id', teacherId);
     
@@ -151,8 +102,8 @@ export const getClassesByTeacher = async (teacherId: string): Promise<Class[]> =
     return (data || []).map(item => ({
       id: item.classes.id,
       name: item.classes.name,
-      departmentId: item.classes.department_id,
-      department: item.classes.departments?.name || '',
+      department: item.classes.department || '',
+      departmentId: '', // Maintenu pour compatibilité
       studentCount: item.classes.student_count,
       unit: item.classes.unit,
       created_at: item.classes.created_at,
@@ -165,8 +116,7 @@ export const getClassesByTeacher = async (teacherId: string): Promise<Class[]> =
 };
 
 export const getTeacherClassesForReservation = async (teacherId: string): Promise<Class[]> => {
-  // This function could have specific filtering for reservation scenarios
-  // For now, we'll reuse the getClassesByTeacher function
+  // Cette fonction réutilise getClassesByTeacher pour la compatibilité
   return getClassesByTeacher(teacherId);
 };
 
@@ -257,7 +207,7 @@ export const removeClass = async (teacherId: string, classId: string): Promise<b
   }
 };
 
-export const addClass = async (classData: { name: string; departmentId: string; studentCount: number; unit?: string }): Promise<Class | null> => {
+export const addClass = async (classData: { name: string; studentCount: number; unit?: string }): Promise<Class | null> => {
   try {
     // Vérifier si l'utilisateur est connecté
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -275,7 +225,6 @@ export const addClass = async (classData: { name: string; departmentId: string; 
     // Formatage des données pour correspondre à la structure de la table
     const formattedData = {
       name: classData.name,
-      department_id: classData.departmentId,
       student_count: classData.studentCount,
       unit: classData.unit
     };
@@ -283,10 +232,7 @@ export const addClass = async (classData: { name: string; departmentId: string; 
     const { data, error } = await supabase
       .from('classes')
       .insert(formattedData)
-      .select(`
-        *,
-        departments (name)
-      `)
+      .select()
       .single();
     
     if (error) {
@@ -308,8 +254,8 @@ export const addClass = async (classData: { name: string; departmentId: string; 
     return {
       id: data.id,
       name: data.name,
-      departmentId: data.department_id,
-      department: data.departments?.name || '',
+      department: data.department || '',
+      departmentId: '', // Maintenu pour compatibilité
       studentCount: data.student_count,
       unit: data.unit,
       created_at: data.created_at,
@@ -321,7 +267,7 @@ export const addClass = async (classData: { name: string; departmentId: string; 
   }
 };
 
-export const updateClass = async (classData: { id: string; name: string; departmentId: string; studentCount: number; unit?: string }): Promise<Class | null> => {
+export const updateClass = async (classData: { id: string; name: string; studentCount: number; unit?: string }): Promise<Class | null> => {
   try {
     // Vérifier si l'utilisateur est connecté
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -339,7 +285,6 @@ export const updateClass = async (classData: { id: string; name: string; departm
     // Formatage des données pour correspondre à la structure de la table
     const formattedData = {
       name: classData.name,
-      department_id: classData.departmentId,
       student_count: classData.studentCount,
       unit: classData.unit
     };
@@ -348,10 +293,7 @@ export const updateClass = async (classData: { id: string; name: string; departm
       .from('classes')
       .update(formattedData)
       .eq('id', classData.id)
-      .select(`
-        *,
-        departments (name)
-      `)
+      .select()
       .single();
     
     if (error) {
@@ -373,8 +315,8 @@ export const updateClass = async (classData: { id: string; name: string; departm
     return {
       id: data.id,
       name: data.name,
-      departmentId: data.department_id,
-      department: data.departments?.name || '',
+      department: data.department || '',
+      departmentId: '', // Maintenu pour compatibilité
       studentCount: data.student_count,
       unit: data.unit,
       created_at: data.created_at,

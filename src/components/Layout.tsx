@@ -72,6 +72,16 @@ const Layout = ({ children, title }: LayoutProps) => {
                   <span>Tableau de bord</span>
                 </Link>
               </li>
+
+              <li>
+                <Link 
+                  to="/profile" 
+                  className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
+                >
+                  <User className="mr-2 h-5 w-5" />
+                  <span>Informations personnelles</span>
+                </Link>
+              </li>
               
               {isTeacherOnly && (
                 <>
@@ -161,7 +171,7 @@ const Layout = ({ children, title }: LayoutProps) => {
                       className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
                     >
                       <GraduationCap className="mr-2 h-5 w-5" />
-                      <span>Classes et départements</span>
+                      <span>Classes</span>
                     </Link>
                   </li>
                 </>
@@ -211,7 +221,7 @@ const Layout = ({ children, title }: LayoutProps) => {
                       className="flex items-center p-2 rounded-md hover:bg-primary-foreground hover:text-primary transition"
                     >
                       <GraduationCap className="mr-2 h-5 w-5" />
-                      <span>Classes et départements</span>
+                      <span>Classes</span>
                     </Link>
                   </li>
                 </>

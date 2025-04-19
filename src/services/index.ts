@@ -1,7 +1,6 @@
 
 // Re-export all service functions
 export * from './users/userService';
-export * from './departments/departmentService';
 export * from './classes/classService';
 export * from './rooms/roomService';
 export * from './equipment/equipmentService';

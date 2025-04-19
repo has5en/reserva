@@ -18,20 +18,12 @@ export interface Room {
   building?: string;
 }
 
-export interface Department {
-  id: string;
-  name: string;
-  description?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
 export interface Class {
   id: string;
   name: string;
   studentCount: number;
-  departmentId: string;
   department?: string;
+  departmentId: string; // Maintenu pour compatibilité mais ne sera plus utilisé
   unit?: string;
   created_at?: string;
   updated_at?: string;
@@ -137,7 +129,6 @@ export interface User {
   role: UserRole;
   avatar_url?: string | null;
   department?: string | null;
-  departments?: string[] | null;
   unit?: string | null;
   rank?: string | null;
   telephone?: string | null;

@@ -12,14 +12,6 @@ import {
   getUsersByRole
 } from './users/userService';
 
-// Re-export department services
-import { 
-  getDepartments, 
-  addDepartment, 
-  updateDepartment, 
-  deleteDepartment 
-} from './departments/departmentService';
-
 // Re-export class services
 import { 
   getClasses, 
@@ -125,6 +117,24 @@ const deleteUser = (id: string) => {
   return Promise.resolve();
 };
 
+// Fonctions pour les départements (maintenues pour compatibilité mais vides)
+const getDepartments = () => {
+  console.log('getDepartments is deprecated. Departments feature has been removed.');
+  return Promise.resolve([]);
+};
+const addDepartment = (department: any) => {
+  console.log('addDepartment is deprecated. Departments feature has been removed.');
+  return Promise.resolve(null);
+};
+const updateDepartment = (department: any) => {
+  console.log('updateDepartment is deprecated. Departments feature has been removed.');
+  return Promise.resolve(null);
+};
+const deleteDepartment = (id: string) => {
+  console.log('deleteDepartment is deprecated. Departments feature has been removed.');
+  return Promise.resolve();
+};
+
 // Re-export everything
 export {
   // User services
@@ -138,7 +148,7 @@ export {
   deleteUser,
   getUsersByRole,
 
-  // Department services
+  // Department services (maintenues pour compatibilité mais vides)
   getDepartments,
   addDepartment,
   updateDepartment,

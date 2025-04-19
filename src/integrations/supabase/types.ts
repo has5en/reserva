@@ -12,7 +12,6 @@ export type Database = {
       classes: {
         Row: {
           created_at: string
-          department_id: string
           id: string
           name: string
           student_count: number
@@ -21,7 +20,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          department_id: string
           id?: string
           name: string
           student_count?: number
@@ -30,43 +28,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          department_id?: string
           id?: string
           name?: string
           student_count?: number
           unit?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "classes_department_id_fkey"
-            columns: ["department_id"]
-            isOneToOne: false
-            referencedRelation: "departments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      departments: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
           updated_at?: string
         }
         Relationships: []
@@ -116,7 +81,6 @@ export type Database = {
           clearance_level: string | null
           created_at: string
           department: string | null
-          departments: string[] | null
           full_name: string | null
           id: string
           rank: string | null
@@ -129,7 +93,6 @@ export type Database = {
           clearance_level?: string | null
           created_at?: string
           department?: string | null
-          departments?: string[] | null
           full_name?: string | null
           id: string
           rank?: string | null
@@ -142,7 +105,6 @@ export type Database = {
           clearance_level?: string | null
           created_at?: string
           department?: string | null
-          departments?: string[] | null
           full_name?: string | null
           id?: string
           rank?: string | null
