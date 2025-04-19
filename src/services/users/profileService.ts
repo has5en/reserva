@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -32,7 +31,7 @@ export const uploadProfilePhoto = async (userId: string, file: File): Promise<st
     const filePath = `profile-photos/${fileName}`;
     
     // Télécharger le fichier
-    const { error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('profiles')
       .upload(filePath, file);
     
@@ -47,14 +46,17 @@ export const uploadProfilePhoto = async (userId: string, file: File): Promise<st
     }
     
     // Obtenir l'URL publique
-    const { data } = supabase.storage
+    const { data: urlData } = supabase.storage
       .from('profiles')
       .getPublicUrl(filePath);
     
     // Mettre à jour le profil de l'utilisateur avec l'URL de la photo
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ avatar_url: data.publicUrl })
+      .update({
+        avatar_url: urlData.publicUrl,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', userId);
     
     if (updateError) {
@@ -72,7 +74,7 @@ export const uploadProfilePhoto = async (userId: string, file: File): Promise<st
       description: "Votre photo de profil a été mise à jour avec succès."
     });
     
-    return data.publicUrl;
+    return urlData.publicUrl;
   } catch (error) {
     console.error('Error in profile photo upload process:', error);
     toast({

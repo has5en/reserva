@@ -1,4 +1,3 @@
-
 export type RequestStatus = 'pending' | 'admin_approved' | 'approved' | 'rejected' | 'returned';
 export type RequestType = 'room' | 'equipment' | 'printing';
 export type RoomType = 'classroom' | 'training_room' | 'weapons_room' | 'tactical_room';
@@ -128,4 +127,16 @@ export interface ResourceUpdate {
   details: string;
   previousState: Record<string, any>;
   newState: Record<string, any>;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatar_url?: string | null;
+  department?: string | null;
+  departments?: string[] | null;
+  unit?: string | null;
+  rank?: string | null;
 }
