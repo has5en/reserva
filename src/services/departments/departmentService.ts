@@ -29,6 +29,18 @@ export const getDepartments = async (): Promise<Department[]> => {
 
 export const addDepartment = async (department: { name: string; description?: string }): Promise<Department | null> => {
   try {
+    // Récupérer la session utilisateur actuelle
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    if (!sessionData.session) {
+      toast({
+        variant: "destructive",
+        title: "Erreur d'authentification",
+        description: "Vous devez être connecté pour effectuer cette action."
+      });
+      return null;
+    }
+    
     const { data, error } = await supabase
       .from('departments')
       .insert(department)
@@ -59,6 +71,18 @@ export const addDepartment = async (department: { name: string; description?: st
 
 export const updateDepartment = async (department: Partial<Department> & { id: string }): Promise<Department | null> => {
   try {
+    // Récupérer la session utilisateur actuelle
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    if (!sessionData.session) {
+      toast({
+        variant: "destructive",
+        title: "Erreur d'authentification",
+        description: "Vous devez être connecté pour effectuer cette action."
+      });
+      return null;
+    }
+    
     const { data, error } = await supabase
       .from('departments')
       .update(department)
@@ -90,6 +114,18 @@ export const updateDepartment = async (department: Partial<Department> & { id: s
 
 export const deleteDepartment = async (id: string): Promise<void> => {
   try {
+    // Récupérer la session utilisateur actuelle
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    if (!sessionData.session) {
+      toast({
+        variant: "destructive",
+        title: "Erreur d'authentification",
+        description: "Vous devez être connecté pour effectuer cette action."
+      });
+      return;
+    }
+    
     const { error } = await supabase
       .from('departments')
       .delete()

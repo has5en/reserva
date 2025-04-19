@@ -1,17 +1,14 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
-export type UserRole = 'teacher' | 'admin' | 'supervisor' | null;
+export type UserRole = 'admin' | 'supervisor' | 'teacher';
 
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
-  department?: string;
-  classes?: string[];
-  password?: string;
+  avatar_url?: string;
 }
 
 interface AuthContextType {
