@@ -29,10 +29,11 @@ export const getDepartments = async (): Promise<Department[]> => {
 
 export const addDepartment = async (department: { name: string; description?: string }): Promise<Department | null> => {
   try {
-    // Récupérer la session utilisateur actuelle avec l'API correcte
-    const { data: { session } } = await supabase.auth.getSession();
+    // Vérifier si l'utilisateur est connecté d'une manière plus directe
+    const { data, error: sessionError } = await supabase.auth.getSession();
     
-    if (!session) {
+    if (sessionError || !data.session) {
+      console.error('Authentication error:', sessionError);
       toast({
         variant: "destructive",
         title: "Erreur d'authentification",
@@ -41,7 +42,8 @@ export const addDepartment = async (department: { name: string; description?: st
       return null;
     }
     
-    const { data, error } = await supabase
+    // Procéder à l'ajout du département
+    const { data: newDepartment, error } = await supabase
       .from('departments')
       .insert(department)
       .select()
@@ -62,7 +64,7 @@ export const addDepartment = async (department: { name: string; description?: st
       description: `${department.name} a été ajouté avec succès.`
     });
     
-    return data;
+    return newDepartment;
   } catch (error) {
     console.error('Error adding department:', error);
     throw error;
@@ -71,10 +73,11 @@ export const addDepartment = async (department: { name: string; description?: st
 
 export const updateDepartment = async (department: Partial<Department> & { id: string }): Promise<Department | null> => {
   try {
-    // Récupérer la session utilisateur actuelle avec l'API correcte
-    const { data: { session } } = await supabase.auth.getSession();
+    // Vérifier si l'utilisateur est connecté d'une manière plus directe
+    const { data, error: sessionError } = await supabase.auth.getSession();
     
-    if (!session) {
+    if (sessionError || !data.session) {
+      console.error('Authentication error:', sessionError);
       toast({
         variant: "destructive",
         title: "Erreur d'authentification",
@@ -83,7 +86,8 @@ export const updateDepartment = async (department: Partial<Department> & { id: s
       return null;
     }
     
-    const { data, error } = await supabase
+    // Procéder à la mise à jour du département
+    const { data: updatedDepartment, error } = await supabase
       .from('departments')
       .update(department)
       .eq('id', department.id)
@@ -105,7 +109,7 @@ export const updateDepartment = async (department: Partial<Department> & { id: s
       description: `${department.name} a été mis à jour avec succès.`
     });
     
-    return data;
+    return updatedDepartment;
   } catch (error) {
     console.error('Error updating department:', error);
     throw error;
@@ -114,10 +118,11 @@ export const updateDepartment = async (department: Partial<Department> & { id: s
 
 export const deleteDepartment = async (id: string): Promise<void> => {
   try {
-    // Récupérer la session utilisateur actuelle avec l'API correcte
-    const { data: { session } } = await supabase.auth.getSession();
+    // Vérifier si l'utilisateur est connecté d'une manière plus directe
+    const { data, error: sessionError } = await supabase.auth.getSession();
     
-    if (!session) {
+    if (sessionError || !data.session) {
+      console.error('Authentication error:', sessionError);
       toast({
         variant: "destructive",
         title: "Erreur d'authentification",
@@ -126,6 +131,7 @@ export const deleteDepartment = async (id: string): Promise<void> => {
       return;
     }
     
+    // Procéder à la suppression du département
     const { error } = await supabase
       .from('departments')
       .delete()

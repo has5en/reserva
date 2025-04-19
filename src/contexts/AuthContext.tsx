@@ -1,4 +1,6 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { User, UserRole } from '@/data/models';
 
@@ -65,12 +67,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
 
   useEffect(() => {
+    // Vérifiez s'il y a un utilisateur dans le localStorage à chaque montage du composant
     const savedUser = localStorage.getItem('user');
     const rememberedEmail = localStorage.getItem('rememberedEmail');
     
     if (savedUser) {
       setCurrentUser(JSON.parse(savedUser));
+      // Ajoutez cette ligne pour maintenir la cohérence avec Supabase
+      supabase.auth.getSession();
     } else if (rememberedEmail) {
+      // Logique existante pour l'email mémorisé
     }
     setLoading(false);
   }, []);
@@ -85,6 +91,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { password: _, ...userWithoutPassword } = user;
         setCurrentUser(userWithoutPassword);
         localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+        
+        // Simuler une connexion Supabase pour les besoins de développement
+        // Note: dans une application réelle, cette partie serait remplacée par supabase.auth.signInWithPassword()
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          // Créer une session temporaire pour les tests (simulation uniquement)
+          await supabase.auth.signInWithPassword({ 
+            email, 
+            password
+          }).catch(e => console.log("Simulation d'authentification:", e));
+        }
         
         if (remember) {
           localStorage.setItem('rememberedEmail', email);
@@ -117,6 +134,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem('user');
+    // Déconnexion de Supabase également
+    supabase.auth.signOut();
     toast({
       title: "Déconnexion réussie",
       description: "À bientôt!",
