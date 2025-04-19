@@ -1,3 +1,4 @@
+
 export type RequestStatus = 'pending' | 'admin_approved' | 'approved' | 'rejected' | 'returned';
 export type RequestType = 'room' | 'equipment' | 'printing';
 export type RoomType = 'classroom' | 'training_room' | 'weapons_room' | 'tactical_room';
@@ -139,4 +140,5 @@ export interface User {
   departments?: string[] | null;
   unit?: string | null;
   rank?: string | null;
+  password?: string; // Added for MockUser compatibility
 }

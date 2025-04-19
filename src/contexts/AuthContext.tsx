@@ -1,19 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
-
-export type UserRole = 'admin' | 'supervisor' | 'teacher';
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  avatar_url?: string;
-}
-
-interface MockUser extends User {
-  password: string;
-}
+import { User, UserRole } from '@/data/models';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -32,6 +19,11 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Extend the User interface to include password for mock data
+interface MockUser extends User {
+  password: string;
+}
 
 const MOCK_USERS: MockUser[] = [
   {
