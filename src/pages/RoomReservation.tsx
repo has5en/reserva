@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +26,7 @@ const RoomReservation = () => {
   const [endTime, setEndTime] = useState<string>('');
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(false);
+  const [classesLoading, setClassesLoading] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [showValidationErrors, setShowValidationErrors] = useState(false);
   const [classes, setClasses] = useState<Class[]>([]);
@@ -35,11 +37,21 @@ const RoomReservation = () => {
       if (!currentUser) return;
       
       try {
+        setClassesLoading(true);
+        console.log('Loading classes for teacher ID:', currentUser.id);
         const userClasses = await getTeacherClassesForReservation(currentUser.id);
-        setClasses(userClasses);
+        console.log('Classes loaded:', userClasses);
         
         if (userClasses.length > 0) {
+          setClasses(userClasses);
           setSelectedClass(userClasses[0]);
+        } else {
+          console.log('No classes found for this teacher');
+          toast({
+            variant: 'warning',
+            title: 'Aucune classe trouvée',
+            description: 'Vous n\'avez pas de classes assignées. Veuillez contacter l\'administration.',
+          });
         }
       } catch (error) {
         console.error('Failed to load classes:', error);
@@ -48,6 +60,8 @@ const RoomReservation = () => {
           title: 'Erreur',
           description: 'Impossible de charger vos classes. Veuillez réessayer.',
         });
+      } finally {
+        setClassesLoading(false);
       }
     };
     
@@ -133,19 +147,27 @@ const RoomReservation = () => {
               </div>
               <div>
                 <Label htmlFor="class">Classe</Label>
-                <Select onValueChange={(value) => {
-                  const selected = classes.find(cls => cls.id === value);
-                  setSelectedClass(selected || null);
-                }}>
+                <Select 
+                  disabled={classesLoading} 
+                  onValueChange={(value) => {
+                    const selected = classes.find(cls => cls.id === value);
+                    setSelectedClass(selected || null);
+                  }}
+                >
                   <SelectTrigger id="class">
-                    <SelectValue placeholder="Sélectionner une classe" />
+                    <SelectValue placeholder={classesLoading ? "Chargement..." : "Sélectionner une classe"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {classes.map((cls) => (
-                      <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
-                    ))}
+                    {classes.length > 0 ? (
+                      classes.map((cls) => (
+                        <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem disabled value="no-classes">Aucune classe disponible</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
+                {classesLoading && <p className="text-xs text-muted-foreground mt-1">Chargement des classes...</p>}
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

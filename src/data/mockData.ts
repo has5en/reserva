@@ -1,4 +1,3 @@
-
 import { Room, Class, Equipment, Request } from './models';
 
 export const MOCK_ROOMS: Room[] = [
@@ -9,7 +8,9 @@ export const MOCK_ROOMS: Room[] = [
     available: true,
     type: 'classroom',
     software: ['Python', 'MATLAB', 'Visual Studio Code'],
-    equipment: ['Projecteur', 'Tableau blanc interactif']
+    equipment: ['Projecteur', 'Tableau blanc interactif'],
+    floor: 'Rez-de-chaussée',
+    building: 'Bâtiment A'
   },
   {
     id: '2',
@@ -18,7 +19,9 @@ export const MOCK_ROOMS: Room[] = [
     available: true,
     type: 'classroom',
     software: ['AutoCAD', 'Adobe Creative Suite'],
-    equipment: ['Imprimante 3D', 'Scanner']
+    equipment: ['Imprimante 3D', 'Scanner'],
+    floor: '1er étage',
+    building: 'Bâtiment B'
   },
   {
     id: '3',
@@ -26,7 +29,9 @@ export const MOCK_ROOMS: Room[] = [
     capacity: 50,
     available: true,
     type: 'classroom',
-    equipment: ['Projecteur', 'Système audio']
+    equipment: ['Projecteur', 'Système audio'],
+    floor: '2e étage',
+    building: 'Bâtiment A'
   },
   {
     id: '4',
@@ -34,7 +39,9 @@ export const MOCK_ROOMS: Room[] = [
     capacity: 20,
     available: true,
     type: 'classroom',
-    equipment: ['Microscopes', 'Équipement d\'expérimentation']
+    equipment: ['Microscopes', 'Équipement d\'expérimentation'],
+    floor: 'Sous-sol',
+    building: 'Bâtiment C'
   }
 ];
 
@@ -43,25 +50,29 @@ export const MOCK_CLASSES: Class[] = [
     id: '1',
     name: 'Classe 3A',
     studentCount: 30,
-    departmentId: '1'
+    departmentId: '1',
+    unit: 'Unité A'
   },
   {
     id: '2',
     name: 'Classe 4B',
     studentCount: 25,
-    departmentId: '1'
+    departmentId: '1',
+    unit: 'Unité B'
   },
   {
     id: '3',
     name: 'Design 2',
     studentCount: 18,
-    departmentId: '2'
+    departmentId: '2',
+    unit: 'Unité C'
   },
   {
     id: '4',
     name: 'Physique Appliquée',
     studentCount: 22,
-    departmentId: '3'
+    departmentId: '3',
+    unit: 'Unité D'
   }
 ];
 
@@ -70,25 +81,33 @@ export const MOCK_EQUIPMENT: Equipment[] = [
     id: '1',
     name: 'Ordinateur portable',
     category: 'Informatique',
-    available: 15
+    available: 15,
+    location: 'Salle 101',
+    description: 'Ordinateurs portables pour usage en classe'
   },
   {
     id: '2',
     name: 'Projecteur portable',
     category: 'Présentation',
-    available: 5
+    available: 5,
+    location: 'Bureau technique',
+    description: 'Projecteurs HD pour présentations'
   },
   {
     id: '3',
     name: 'Tablette graphique',
     category: 'Design',
-    available: 10
+    available: 10,
+    location: 'Laboratoire design',
+    description: 'Tablettes graphiques professionnelles'
   },
   {
     id: '4',
     name: 'Kit Arduino',
     category: 'Électronique',
-    available: 20
+    available: 20,
+    location: 'Laboratoire électronique',
+    description: 'Kits complets avec composants'
   }
 ];
 

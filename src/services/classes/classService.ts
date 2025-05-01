@@ -87,9 +87,18 @@ export const getClassesByDepartment = async (departmentId: string): Promise<Clas
 
 export const getClassesByTeacher = async (teacherId: string): Promise<Class[]> => {
   try {
+    console.log(`Fetching classes for teacher with ID: ${teacherId}`);
+    
+    // Si l'ID de l'enseignant n'est pas un UUID valide
+    if (!teacherId || typeof teacherId !== 'string' || teacherId.length < 10) {
+      console.warn('Invalid teacher ID provided:', teacherId);
+      return [];
+    }
+    
     const { data, error } = await supabase
       .from('teacher_classes')
       .select(`
+        class_id,
         classes (*)
       `)
       .eq('teacher_id', teacherId);
@@ -104,16 +113,23 @@ export const getClassesByTeacher = async (teacherId: string): Promise<Class[]> =
       throw error;
     }
     
+    console.log('Teacher classes data:', data);
+    
     // Format data to match Class model
-    return (data || []).map(item => ({
-      id: item.classes.id,
-      name: item.classes.name,
-      departmentId: '', // Maintenu pour compatibilité
-      studentCount: item.classes.student_count,
-      unit: item.classes.unit,
-      created_at: item.classes.created_at,
-      updated_at: item.classes.updated_at
-    }));
+    const classes = data
+      .filter(item => item.classes) // Vérifier que classes existe
+      .map(item => ({
+        id: item.classes.id,
+        name: item.classes.name,
+        departmentId: '', // Maintenu pour compatibilité
+        studentCount: item.classes.student_count,
+        unit: item.classes.unit,
+        created_at: item.classes.created_at,
+        updated_at: item.classes.updated_at
+      }));
+      
+    console.log('Formatted classes for teacher:', classes);
+    return classes;
   } catch (error) {
     console.error('Error fetching classes by teacher:', error);
     return [];
@@ -121,8 +137,30 @@ export const getClassesByTeacher = async (teacherId: string): Promise<Class[]> =
 };
 
 export const getTeacherClassesForReservation = async (teacherId: string): Promise<Class[]> => {
-  // Cette fonction réutilise getClassesByTeacher pour la compatibilité
-  return getClassesByTeacher(teacherId);
+  try {
+    console.log(`Getting classes for reservation, teacher ID: ${teacherId}`);
+    
+    // Si aucun enseignant n'est connecté ou si l'ID n'est pas valide
+    if (!teacherId || teacherId === 'undefined') {
+      console.log('No valid teacher ID provided, fetching all classes');
+      return getClasses(); // Récupérer toutes les classes comme fallback
+    }
+    
+    const teacherClasses = await getClassesByTeacher(teacherId);
+    
+    if (teacherClasses.length === 0) {
+      console.log('No classes found for teacher, fetching all classes as fallback');
+      return getClasses(); // Récupérer toutes les classes si l'enseignant n'a pas de classes assignées
+    }
+    
+    console.log(`Found ${teacherClasses.length} classes for teacher`);
+    return teacherClasses;
+  } catch (error) {
+    console.error('Error in getTeacherClassesForReservation:', error);
+    // En cas d'erreur, récupérer toutes les classes
+    console.log('Error occurred, fetching all classes as fallback');
+    return getClasses();
+  }
 };
 
 export const addTeacherClass = async (teacherId: string, classId: string): Promise<boolean> => {
