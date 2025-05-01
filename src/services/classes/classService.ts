@@ -4,6 +4,7 @@ import { toast } from '@/components/ui/use-toast';
 
 export const getClasses = async (): Promise<Class[]> => {
   try {
+    console.log('Fetching classes from database...');
     const { data, error } = await supabase
       .from('classes')
       .select('*')
@@ -18,6 +19,8 @@ export const getClasses = async (): Promise<Class[]> => {
       });
       throw error;
     }
+    
+    console.log('Classes fetched successfully:', data);
     
     // Format data to match Class model
     return (data || []).map(item => ({
@@ -37,6 +40,7 @@ export const getClasses = async (): Promise<Class[]> => {
 
 export const getClassById = async (id: string): Promise<Class | null> => {
   try {
+    console.log(`Fetching class with ID: ${id}`);
     const { data, error } = await supabase
       .from('classes')
       .select('*')
@@ -53,7 +57,12 @@ export const getClassById = async (id: string): Promise<Class | null> => {
       throw error;
     }
     
-    if (!data) return null;
+    if (!data) {
+      console.log(`No class found with ID: ${id}`);
+      return null;
+    }
+    
+    console.log('Class fetched successfully:', data);
     
     // Format data to match Class model
     return {
@@ -118,17 +127,28 @@ export const getTeacherClassesForReservation = async (teacherId: string): Promis
 
 export const addTeacherClass = async (teacherId: string, classId: string): Promise<boolean> => {
   try {
-    // Vérifier si l'utilisateur est connecté
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    console.log(`Adding class ${classId} to teacher ${teacherId}`);
     
-    if (sessionError || !sessionData.session) {
-      console.error('Authentication error:', sessionError);
+    // Vérifier si l'association existe déjà
+    const { data: existingData, error: existingError } = await supabase
+      .from('teacher_classes')
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .eq('class_id', classId)
+      .maybeSingle();
+    
+    if (existingError) {
+      console.error('Error checking existing teacher-class association:', existingError);
+      throw existingError;
+    }
+    
+    if (existingData) {
+      console.log('This teacher-class association already exists');
       toast({
-        variant: "destructive",
-        title: "Erreur d'authentification",
-        description: "Vous devez être connecté pour effectuer cette action."
+        title: "Information",
+        description: "Cette classe est déjà assignée à cet enseignant."
       });
-      return false;
+      return true;
     }
     
     const { error } = await supabase
@@ -148,6 +168,7 @@ export const addTeacherClass = async (teacherId: string, classId: string): Promi
       throw error;
     }
     
+    console.log('Teacher-class association added successfully');
     toast({
       title: "Classe assignée",
       description: "La classe a été assignée à l'enseignant avec succès."
@@ -162,18 +183,7 @@ export const addTeacherClass = async (teacherId: string, classId: string): Promi
 
 export const removeClass = async (teacherId: string, classId: string): Promise<boolean> => {
   try {
-    // Vérifier si l'utilisateur est connecté
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !sessionData.session) {
-      console.error('Authentication error:', sessionError);
-      toast({
-        variant: "destructive",
-        title: "Erreur d'authentification",
-        description: "Vous devez être connecté pour effectuer cette action."
-      });
-      return false;
-    }
+    console.log(`Removing class ${classId} from teacher ${teacherId}`);
     
     const { error } = await supabase
       .from('teacher_classes')
@@ -191,6 +201,7 @@ export const removeClass = async (teacherId: string, classId: string): Promise<b
       throw error;
     }
     
+    console.log('Teacher-class association removed successfully');
     toast({
       title: "Classe retirée",
       description: "La classe a été retirée de l'enseignant avec succès."
@@ -205,18 +216,7 @@ export const removeClass = async (teacherId: string, classId: string): Promise<b
 
 export const addClass = async (classData: { name: string; studentCount: number; unit?: string }): Promise<Class | null> => {
   try {
-    // Vérifier si l'utilisateur est connecté
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !sessionData.session) {
-      console.error('Authentication error:', sessionError);
-      toast({
-        variant: "destructive",
-        title: "Erreur d'authentification",
-        description: "Vous devez être connecté pour effectuer cette action."
-      });
-      return null;
-    }
+    console.log('Adding new class:', classData);
     
     // Formatage des données pour correspondre à la structure de la table
     const formattedData = {
@@ -241,6 +241,7 @@ export const addClass = async (classData: { name: string; studentCount: number; 
       throw error;
     }
     
+    console.log('Class added successfully:', data);
     toast({
       title: "Classe ajoutée",
       description: `${classData.name} a été ajoutée avec succès.`
@@ -264,18 +265,7 @@ export const addClass = async (classData: { name: string; studentCount: number; 
 
 export const updateClass = async (classData: { id: string; name: string; studentCount: number; unit?: string }): Promise<Class | null> => {
   try {
-    // Vérifier si l'utilisateur est connecté
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !sessionData.session) {
-      console.error('Authentication error:', sessionError);
-      toast({
-        variant: "destructive",
-        title: "Erreur d'authentification",
-        description: "Vous devez être connecté pour effectuer cette action."
-      });
-      return null;
-    }
+    console.log('Updating class:', classData);
     
     // Formatage des données pour correspondre à la structure de la table
     const formattedData = {
@@ -301,6 +291,7 @@ export const updateClass = async (classData: { id: string; name: string; student
       throw error;
     }
     
+    console.log('Class updated successfully:', data);
     toast({
       title: "Classe mise à jour",
       description: `${classData.name} a été mise à jour avec succès.`
@@ -324,18 +315,7 @@ export const updateClass = async (classData: { id: string; name: string; student
 
 export const deleteClass = async (id: string): Promise<void> => {
   try {
-    // Vérifier si l'utilisateur est connecté
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !sessionData.session) {
-      console.error('Authentication error:', sessionError);
-      toast({
-        variant: "destructive",
-        title: "Erreur d'authentification",
-        description: "Vous devez être connecté pour effectuer cette action."
-      });
-      return;
-    }
+    console.log(`Deleting class with ID: ${id}`);
     
     const { error } = await supabase
       .from('classes')
@@ -352,6 +332,7 @@ export const deleteClass = async (id: string): Promise<void> => {
       throw error;
     }
     
+    console.log('Class deleted successfully');
     toast({
       title: "Classe supprimée",
       description: "La classe a été supprimée avec succès."
