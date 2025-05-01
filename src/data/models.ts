@@ -12,7 +12,6 @@ export interface Room {
   type: RoomType;
   software?: string[];
   equipment?: string[];
-  department?: string;
   description?: string;
   floor?: string;
   building?: string;
@@ -22,9 +21,8 @@ export interface Class {
   id: string;
   name: string;
   studentCount: number;
-  department?: string;
-  departmentId: string; // Maintenu pour compatibilité mais ne sera plus utilisé
   unit?: string;
+  departmentId: string; // Maintenu pour compatibilité mais ne sera plus utilisé
   created_at?: string;
   updated_at?: string;
 }
@@ -34,7 +32,6 @@ export interface TeacherClass {
   teacherId: string;
   classId: string;
   className?: string;
-  departmentName?: string;
   created_at?: string;
 }
 
@@ -43,7 +40,6 @@ export interface Equipment {
   name: string;
   category: string;
   available: number;
-  department?: string;
   requires_clearance?: boolean;
   description?: string;
   location?: string;
@@ -128,7 +124,6 @@ export interface User {
   email: string;
   role: UserRole;
   avatar_url?: string | null;
-  department?: string | null;
   unit?: string | null;
   rank?: string | null;
   telephone?: string | null;

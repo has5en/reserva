@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Class } from '@/data/models';
 import { toast } from '@/components/ui/use-toast';
@@ -24,7 +23,6 @@ export const getClasses = async (): Promise<Class[]> => {
     return (data || []).map(item => ({
       id: item.id,
       name: item.name,
-      department: item.department || '',
       departmentId: '', // Maintenu pour compatibilité
       studentCount: item.student_count,
       unit: item.unit,
@@ -61,7 +59,6 @@ export const getClassById = async (id: string): Promise<Class | null> => {
     return {
       id: data.id,
       name: data.name,
-      department: data.department || '',
       departmentId: '', // Maintenu pour compatibilité
       studentCount: data.student_count,
       unit: data.unit,
@@ -102,7 +99,6 @@ export const getClassesByTeacher = async (teacherId: string): Promise<Class[]> =
     return (data || []).map(item => ({
       id: item.classes.id,
       name: item.classes.name,
-      department: item.classes.department || '',
       departmentId: '', // Maintenu pour compatibilité
       studentCount: item.classes.student_count,
       unit: item.classes.unit,
@@ -254,7 +250,6 @@ export const addClass = async (classData: { name: string; studentCount: number; 
     return {
       id: data.id,
       name: data.name,
-      department: data.department || '',
       departmentId: '', // Maintenu pour compatibilité
       studentCount: data.student_count,
       unit: data.unit,
@@ -315,7 +310,6 @@ export const updateClass = async (classData: { id: string; name: string; student
     return {
       id: data.id,
       name: data.name,
-      department: data.department || '',
       departmentId: '', // Maintenu pour compatibilité
       studentCount: data.student_count,
       unit: data.unit,
