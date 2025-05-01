@@ -48,7 +48,8 @@ const RoomReservation = () => {
         } else {
           console.log('No classes found for this teacher');
           toast({
-            variant: 'warning',
+            // Changed from 'warning' to 'default' with a custom style
+            variant: 'default',
             title: 'Aucune classe trouvée',
             description: 'Vous n\'avez pas de classes assignées. Veuillez contacter l\'administration.',
           });
@@ -241,3 +242,4 @@ const RoomReservation = () => {
 };
 
 export default RoomReservation;
+
