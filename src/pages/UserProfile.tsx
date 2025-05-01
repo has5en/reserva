@@ -10,7 +10,7 @@ import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 const UserProfile = () => {
-  const { currentUser, refreshUser } = useAuth();
+  const { currentUser, updateUser } = useAuth();
   const [fullName, setFullName] = useState('');
   const [rank, setRank] = useState('');
   const [unit, setUnit] = useState('');
@@ -41,6 +41,15 @@ const UserProfile = () => {
     setIsUpdating(true);
     
     try {
+      // Mise à jour des données dans le contexte d'authentification
+      updateUser(currentUser.id, {
+        name: fullName,
+        rank,
+        unit,
+        telephone
+      });
+      
+      // Mise à jour des données dans Supabase
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -52,8 +61,6 @@ const UserProfile = () => {
         .eq('id', currentUser.id);
       
       if (error) throw error;
-      
-      refreshUser();
       
       toast({
         title: "Profil mis à jour",

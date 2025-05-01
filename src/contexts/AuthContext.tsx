@@ -13,10 +13,10 @@ interface AuthContextType {
   hasRole: (role: UserRole) => boolean;
   loginAttempts: number;
   resetLoginAttempts: () => void;
+  updateUser: (id: string, userData: Partial<User>) => void;
   // User management functions
   getUsers: (role: UserRole) => User[];
   addUser: (user: Omit<User, 'id'>) => void;
-  updateUser: (id: string, userData: Partial<User>) => void;
   deleteUser: (id: string) => void;
 }
 
@@ -34,7 +34,6 @@ const MOCK_USERS: MockUser[] = [
     password: 'password',
     name: 'Jean Dupont',
     role: 'teacher',
-    department: 'Informatique',
     unit: 'Formation',
     rank: 'Enseignant'
   },
@@ -44,7 +43,6 @@ const MOCK_USERS: MockUser[] = [
     password: 'password',
     name: 'Marie Lambert',
     role: 'admin',
-    department: 'Administration',
     unit: 'Direction',
     rank: 'Administrateur'
   },
@@ -54,7 +52,6 @@ const MOCK_USERS: MockUser[] = [
     password: 'password',
     name: 'Philippe Martin',
     role: 'supervisor',
-    department: 'Sciences',
     unit: 'Supervision',
     rank: 'Superviseur'
   }

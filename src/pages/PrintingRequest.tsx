@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,13 +46,7 @@ const PrintingRequest = () => {
       setLoading(true);
       try {
         const classesData = await getClasses();
-        
-        // If user is a teacher, filter classes by their department
-        if (currentUser?.role === 'teacher' && currentUser?.department) {
-          setClasses(classesData.filter(cls => cls.department === currentUser.department));
-        } else {
-          setClasses(classesData);
-        }
+        setClasses(classesData);
       } catch (error) {
         console.error('Failed to fetch data:', error);
         toast({
@@ -188,7 +183,6 @@ const PrintingRequest = () => {
       <div className="space-y-2 p-4 border rounded-md bg-accent">
         <h3 className="font-semibold">Détails de la classe</h3>
         <p><span className="font-medium">Effectif:</span> {selectedClassData.studentCount} étudiants</p>
-        <p><span className="font-medium">Département:</span> {selectedClassData.department}</p>
       </div>
     );
   };

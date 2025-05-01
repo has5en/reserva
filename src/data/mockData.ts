@@ -1,4 +1,3 @@
-
 import { Room, Class, Equipment, Request } from './models';
 
 export const MOCK_ROOMS: Room[] = [
@@ -9,8 +8,7 @@ export const MOCK_ROOMS: Room[] = [
     available: true,
     type: 'classroom',
     software: ['Python', 'MATLAB', 'Visual Studio Code'],
-    equipment: ['Projecteur', 'Tableau blanc interactif'],
-    department: 'Informatique'
+    equipment: ['Projecteur', 'Tableau blanc interactif']
   },
   {
     id: '2',
@@ -19,8 +17,7 @@ export const MOCK_ROOMS: Room[] = [
     available: true,
     type: 'classroom',
     software: ['AutoCAD', 'Adobe Creative Suite'],
-    equipment: ['Imprimante 3D', 'Scanner'],
-    department: 'Design'
+    equipment: ['Imprimante 3D', 'Scanner']
   },
   {
     id: '3',
@@ -28,8 +25,7 @@ export const MOCK_ROOMS: Room[] = [
     capacity: 50,
     available: true,
     type: 'classroom',
-    equipment: ['Projecteur', 'Système audio'],
-    department: 'Général'
+    equipment: ['Projecteur', 'Système audio']
   },
   {
     id: '4',
@@ -37,8 +33,7 @@ export const MOCK_ROOMS: Room[] = [
     capacity: 20,
     available: true,
     type: 'classroom',
-    equipment: ['Microscopes', 'Équipement d\'expérimentation'],
-    department: 'Sciences'
+    equipment: ['Microscopes', 'Équipement d\'expérimentation']
   }
 ];
 
@@ -47,28 +42,24 @@ export const MOCK_CLASSES: Class[] = [
     id: '1',
     name: 'Classe 3A',
     studentCount: 30,
-    department: 'Informatique',
     departmentId: '1'
   },
   {
     id: '2',
     name: 'Classe 4B',
     studentCount: 25,
-    department: 'Informatique',
     departmentId: '1'
   },
   {
     id: '3',
     name: 'Design 2',
     studentCount: 18,
-    department: 'Design',
     departmentId: '2'
   },
   {
     id: '4',
     name: 'Physique Appliquée',
     studentCount: 22,
-    department: 'Sciences',
     departmentId: '3'
   }
 ];
@@ -78,29 +69,25 @@ export const MOCK_EQUIPMENT: Equipment[] = [
     id: '1',
     name: 'Ordinateur portable',
     category: 'Informatique',
-    available: 15,
-    department: 'IT'
+    available: 15
   },
   {
     id: '2',
     name: 'Projecteur portable',
     category: 'Présentation',
-    available: 5,
-    department: 'Général'
+    available: 5
   },
   {
     id: '3',
     name: 'Tablette graphique',
     category: 'Design',
-    available: 10,
-    department: 'Design'
+    available: 10
   },
   {
     id: '4',
     name: 'Kit Arduino',
     category: 'Électronique',
-    available: 20,
-    department: 'Informatique'
+    available: 20
   }
 ];
 
