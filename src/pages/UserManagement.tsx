@@ -5,10 +5,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/data/models';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import UserManagementTable from '@/components/UserManagementTable';
+import TeacherDepartmentSelector from '@/components/TeacherDepartmentSelector';
 
 const UserManagement = () => {
   const { currentUser, hasRole } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('teachers');
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
 
   // Determine which tabs to show based on user role
   const showTeachersTab = hasRole('admin') || hasRole('supervisor');
@@ -27,6 +29,10 @@ const UserManagement = () => {
     setActiveTab(value);
   };
 
+  const handleDepartmentChange = (department: string) => {
+    setSelectedDepartment(department);
+  };
+
   if (!showTeachersTab && !showAdminsTab) {
     return (
       <Layout title="Gestion des utilisateurs">
@@ -39,8 +45,14 @@ const UserManagement = () => {
 
   return (
     <Layout title="Gestion des utilisateurs">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col space-y-4 mb-4">
         <h1 className="text-2xl font-bold">Gestion des utilisateurs</h1>
+        
+        {activeTab === 'teachers' && (
+          <div className="max-w-xs">
+            <TeacherDepartmentSelector onChange={handleDepartmentChange} />
+          </div>
+        )}
       </div>
       
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
@@ -51,7 +63,10 @@ const UserManagement = () => {
         
         {showTeachersTab && (
           <TabsContent value="teachers">
-            <UserManagementTable userRole="teacher" />
+            <UserManagementTable 
+              userRole="teacher" 
+              department={selectedDepartment || undefined} 
+            />
           </TabsContent>
         )}
         

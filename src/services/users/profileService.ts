@@ -1,178 +1,63 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
 
-// Télécharger une photo de profil
-export const uploadProfilePhoto = async (userId: string, file: File): Promise<string | null> => {
+// Récupérer les infos de département pour les utilisateurs
+export const getUserDepartments = async () => {
   try {
-    // Vérifier si le fichier est une image
-    if (!file.type.startsWith('image/')) {
-      toast({
-        variant: "destructive",
-        title: "Type de fichier non valide",
-        description: "Veuillez sélectionner une image (JPG, PNG, etc.)."
-      });
-      return null;
-    }
-    
-    // Limiter la taille du fichier (5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
-      toast({
-        variant: "destructive",
-        title: "Fichier trop volumineux",
-        description: "La taille de l'image ne doit pas dépasser 5MB."
-      });
-      return null;
-    }
-    
-    // Créer un nom de fichier unique
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}-${Date.now()}.${fileExt}`;
-    const filePath = `profile-photos/${fileName}`;
-    
-    // Télécharger le fichier
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    // Get distinct departments
+    const { data, error } = await supabase
       .from('profiles')
-      .upload(filePath, file);
+      .select('department')
+      .not('department', 'is', null)
+      .order('department');
     
-    if (uploadError) {
-      console.error('Error uploading profile photo:', uploadError);
-      toast({
-        variant: "destructive",
-        title: "Erreur lors du téléchargement",
-        description: uploadError.message
-      });
-      return null;
-    }
+    if (error) throw error;
     
-    // Obtenir l'URL publique
-    const { data: urlData } = supabase.storage
-      .from('profiles')
-      .getPublicUrl(filePath);
-    
-    // Mettre à jour le profil de l'utilisateur avec l'URL de la photo
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({
-        avatar_url: urlData.publicUrl,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId);
-    
-    if (updateError) {
-      console.error('Error updating profile with photo URL:', updateError);
-      toast({
-        variant: "destructive",
-        title: "Erreur lors de la mise à jour du profil",
-        description: updateError.message
-      });
-      return null;
-    }
-    
-    toast({
-      title: "Photo de profil mise à jour",
-      description: "Votre photo de profil a été mise à jour avec succès."
-    });
-    
-    return urlData.publicUrl;
+    // Filter out duplicates and nulls
+    const departments = data
+      .map(item => item.department)
+      .filter((dept, index, self) => dept && self.indexOf(dept) === index);
+      
+    return departments;
   } catch (error) {
-    console.error('Error in profile photo upload process:', error);
-    toast({
-      variant: "destructive",
-      title: "Erreur",
-      description: "Une erreur est survenue lors du téléchargement de la photo."
-    });
-    return null;
+    console.error('Error fetching user departments:', error);
+    return [];
   }
 };
 
-// Mettre à jour le profil utilisateur
-export const updateUserProfile = async (userId: string, profileData: { 
-  full_name?: string; 
-  email?: string; 
-  telephone?: string;
-  department?: string;
-  unit?: string;
-  rank?: string;
-}) => {
+// Mise à jour du département d'un utilisateur
+export const updateUserDepartment = async (userId: string, department: string) => {
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
-      .update({
-        ...profileData,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId);
+      .update({ department })
+      .eq('id', userId)
+      .select()
+      .single();
     
-    if (error) {
-      console.error('Error updating user profile:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur lors de la mise à jour du profil",
-        description: error.message
-      });
-      throw error;
-    }
+    if (error) throw error;
     
-    toast({
-      title: "Profil mis à jour",
-      description: "Votre profil a été mis à jour avec succès."
-    });
-    
-    return true;
+    return data;
   } catch (error) {
-    console.error('Error updating user profile:', error);
-    return false;
+    console.error('Error updating user department:', error);
+    throw error;
   }
 };
 
-// Récupérer les données d'un profil utilisateur
-export const getUserProfile = async (userId: string) => {
+// Récupérer les utilisateurs par département
+export const getUsersByDepartment = async (department: string) => {
   try {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
-      .single();
+      .eq('department', department)
+      .order('full_name');
     
-    if (error) {
-      console.error('Error fetching user profile:', error);
-      return null;
-    }
+    if (error) throw error;
     
-    return data;
+    return data || [];
   } catch (error) {
-    console.error('Error fetching user profile:', error);
-    return null;
-  }
-};
-
-// Mettre à jour le mot de passe utilisateur
-export const updateUserPassword = async (newPassword: string) => {
-  try {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
-    });
-    
-    if (error) {
-      console.error('Error updating password:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur lors de la mise à jour du mot de passe",
-        description: error.message
-      });
-      throw error;
-    }
-    
-    toast({
-      title: "Mot de passe mis à jour",
-      description: "Votre mot de passe a été mis à jour avec succès."
-    });
-    
-    return true;
-  } catch (error) {
-    console.error('Error updating password:', error);
-    return false;
+    console.error('Error fetching users by department:', error);
+    return [];
   }
 };
