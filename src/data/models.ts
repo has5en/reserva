@@ -120,12 +120,18 @@ export interface ResourceUpdate {
 
 export interface User {
   id: string;
-  name: string;
-  email: string;
+  name?: string; // Made optional
+  email?: string; // Made optional
   role: UserRole;
   avatar_url?: string | null;
   unit?: string | null;
   rank?: string | null;
   telephone?: string | null;
   password?: string; // Added for MockUser compatibility
+  // Add fields from the profiles table
+  full_name?: string | null;
+  department?: string | null;
+  clearance_level?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }

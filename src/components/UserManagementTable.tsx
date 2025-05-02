@@ -1,9 +1,8 @@
 
-// Since we don't have the content of UserManagementTable.tsx, we'll create a basic version
-// that accepts the department prop, assuming it's displaying a table of users
 import { useState, useEffect } from 'react';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getUsersByDepartment } from '@/services/users/profileService';
+import { getUsersByRole } from '@/services/users/userService';
 import { User } from '@/data/models';
 
 interface UserManagementTableProps {
@@ -24,11 +23,13 @@ const UserManagementTable = ({ userRole, department }: UserManagementTableProps)
         // If department is specified, filter users by department
         if (department && department !== '') {
           const departmentUsers = await getUsersByDepartment(department);
-          setUsers(departmentUsers);
+          // Cast the result to User[] since it matches our updated User interface
+          setUsers(departmentUsers as User[]);
         } else {
-          // Here you would fetch all users or users by role
-          // For now we'll just set an empty array
-          setUsers([]);
+          // Fetch users by role
+          const roleUsers = await getUsersByRole(userRole);
+          // Cast the result to User[] since it matches our updated User interface
+          setUsers(roleUsers as User[]);
         }
       } catch (err) {
         console.error('Error fetching users:', err);
@@ -71,8 +72,8 @@ const UserManagementTable = ({ userRole, department }: UserManagementTableProps)
         ) : (
           users.map((user) => (
             <TableRow key={user.id}>
-              <TableCell>{user.name}</TableCell>
-              <TableCell>{user.email}</TableCell>
+              <TableCell>{user.full_name || user.name || 'Non défini'}</TableCell>
+              <TableCell>{user.email || 'Non défini'}</TableCell>
               <TableCell>{user.role}</TableCell>
               {userRole === 'teacher' && <TableCell>{user.department || 'Non assigné'}</TableCell>}
               <TableCell>
