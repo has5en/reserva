@@ -1,11 +1,12 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Room, RoomType, RoomTypeWithAll } from '@/data/models';
+import { Room, RoomType } from '@/data/models';
 
 export const getRooms = async (): Promise<Room[]> => {
   try {
     const { data, error } = await supabase.from('rooms').select('*');
     if (error) throw error;
+    
     return data.map(room => ({
       id: room.id,
       name: room.name,
@@ -48,7 +49,7 @@ export const getRoomById = async (id: string): Promise<Room | null> => {
   }
 };
 
-export const getAvailableRoomsByType = async (type: RoomTypeWithAll, date: string, startTime: string, endTime: string): Promise<Room[]> => {
+export const getAvailableRoomsByType = async (type: RoomType | 'all', date: string, startTime: string, endTime: string): Promise<Room[]> => {
   try {
     // Construire la requête de base pour obtenir toutes les salles du type demandé
     let query = supabase
@@ -88,6 +89,11 @@ export const getAvailableRoomsByType = async (type: RoomTypeWithAll, date: strin
 
 export const updateRoom = async (room: Room): Promise<void> => {
   try {
+    // Vérifier que le type n'est pas 'all' pour ne pas enfreindre la contrainte de la base de données
+    if (room.type === 'all') {
+      throw new Error("'all' n'est pas un type de salle valide pour la base de données");
+    }
+    
     const dbRoom = {
       id: room.id,
       name: room.name,
@@ -112,13 +118,15 @@ export const updateRoom = async (room: Room): Promise<void> => {
 export const addRoom = async (room: Omit<Room, 'id'>): Promise<Room> => {
   try {
     // Nous devons nous assurer que le type 'all' n'est pas envoyé à la base de données
-    const roomType = room.type === 'all' ? 'classroom' : room.type;
+    if (room.type === 'all') {
+      throw new Error("'all' n'est pas un type de salle valide pour la base de données");
+    }
     
     const dbRoom = {
       name: room.name,
       capacity: room.capacity,
       is_available: room.available,
-      type: roomType,
+      type: room.type,
       equipment: room.equipment || [],
       floor: room.floor || '',
       building: room.building || '',

@@ -212,11 +212,13 @@ export type Database = {
           building: string | null
           capacity: number
           created_at: string
+          description: string | null
           equipment: string[] | null
           floor: string | null
           id: string
           is_available: boolean | null
           name: string
+          software: string[] | null
           type: Database["public"]["Enums"]["room_type"]
           updated_at: string
         }
@@ -224,11 +226,13 @@ export type Database = {
           building?: string | null
           capacity: number
           created_at?: string
+          description?: string | null
           equipment?: string[] | null
           floor?: string | null
           id?: string
           is_available?: boolean | null
           name: string
+          software?: string[] | null
           type: Database["public"]["Enums"]["room_type"]
           updated_at?: string
         }
@@ -236,11 +240,13 @@ export type Database = {
           building?: string | null
           capacity?: number
           created_at?: string
+          description?: string | null
           equipment?: string[] | null
           floor?: string | null
           id?: string
           is_available?: boolean | null
           name?: string
+          software?: string[] | null
           type?: Database["public"]["Enums"]["room_type"]
           updated_at?: string
         }
