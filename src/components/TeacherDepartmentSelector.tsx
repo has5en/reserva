@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { getDepartments } from '@/services/departments/departmentService';
+import { Department } from '@/data/models';
 
 interface TeacherDepartmentSelectorProps {
   onChange: (department: string) => void;
@@ -16,15 +18,24 @@ export const TeacherDepartmentSelector = ({
   label = 'Département',
   className = ''
 }: TeacherDepartmentSelectorProps) => {
-  const [departments, setDepartments] = useState([
-    { id: 'police', name: 'Police' },
-    { id: 'gendarmerie', name: 'Gendarmerie' },
-    { id: 'militaire', name: 'Forces Armées' },
-    { id: 'securite', name: 'Sécurité Civile' },
-    { id: 'autre', name: 'Autre' }
-  ]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
+    const fetchDepartments = async () => {
+      setLoading(true);
+      try {
+        const data = await getDepartments();
+        setDepartments(data);
+      } catch (error) {
+        console.error('Error fetching departments:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDepartments();
+
     if (defaultValue) {
       onChange(defaultValue);
     }
@@ -33,9 +44,9 @@ export const TeacherDepartmentSelector = ({
   return (
     <div className={className}>
       {label && <Label htmlFor="department-select" className="mb-1 block">{label}</Label>}
-      <Select onValueChange={onChange} defaultValue={defaultValue || undefined}>
+      <Select onValueChange={onChange} defaultValue={defaultValue || undefined} disabled={loading}>
         <SelectTrigger id="department-select">
-          <SelectValue placeholder="Sélectionner un département" />
+          <SelectValue placeholder={loading ? "Chargement..." : "Sélectionner un département"} />
         </SelectTrigger>
         <SelectContent>
           {departments.map((dept) => (
@@ -43,6 +54,7 @@ export const TeacherDepartmentSelector = ({
           ))}
         </SelectContent>
       </Select>
+      {loading && <p className="text-xs text-muted-foreground mt-1">Chargement des départements...</p>}
     </div>
   );
 };

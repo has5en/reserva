@@ -12,19 +12,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building, Users, Presentation, Swords, MapPin } from 'lucide-react';
+import { Building, Users, Presentation, Swords, MapPin, Computer, Beaker, GraduationCap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import RoomTypeSelector from '@/components/RoomTypeSelector';
 
 const RoomReservation = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [selectedRoomType, setSelectedRoomType] = useState<RoomType>('classroom');
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  const [startTime, setStartTime] = useState<string>('');
-  const [endTime, setEndTime] = useState<string>('');
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [startTime, setStartTime] = useState<string>('09:00');
+  const [endTime, setEndTime] = useState<string>('10:30');
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(false);
   const [classesLoading, setClassesLoading] = useState(false);
@@ -32,7 +33,7 @@ const RoomReservation = () => {
   const [showValidationErrors, setShowValidationErrors] = useState(false);
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
-  const [currentTab, setCurrentTab] = useState<RoomType>('classroom');
+  const [currentTab, setCurrentTab] = useState<RoomType | 'all'>('all');
 
   useEffect(() => {
     const loadClasses = async () => {
@@ -50,7 +51,6 @@ const RoomReservation = () => {
         } else {
           console.log('No classes found for this teacher');
           toast({
-            // Changed from 'warning' to 'default' with a custom style
             variant: 'default',
             title: 'Aucune classe trouvée',
             description: 'Vous n\'avez pas de classes assignées. Veuillez contacter l\'administration.',
@@ -85,7 +85,8 @@ const RoomReservation = () => {
 
     setLoading(true);
     try {
-      const rooms = await getAvailableRoomsByType(selectedRoomType, date.toISOString(), startTime, endTime);
+      const formattedDate = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
+      const rooms = await getAvailableRoomsByType(selectedRoomType, formattedDate, startTime, endTime);
       setAvailableRooms(rooms);
       setSearchPerformed(true);
       // Set current tab to match selected room type
@@ -112,17 +113,24 @@ const RoomReservation = () => {
       return;
     }
 
+    // Utilisez l'objet d'état complet pour une meilleure traçabilité
+    const requestData = {
+      type: 'room' as const,
+      roomId: room.id,
+      roomName: room.name,
+      date: date.toISOString(),
+      startTime: startTime,
+      endTime: endTime,
+      classId: selectedClass.id,
+      className: selectedClass.name,
+      userId: currentUser.id,
+      userName: currentUser.full_name || currentUser.name || ''
+    };
+
+    console.log("Données de réservation:", requestData);
+
     navigate('/request/new', {
-      state: {
-        type: 'room',
-        roomId: room.id,
-        roomName: room.name,
-        date: date.toISOString(),
-        startTime: startTime,
-        endTime: endTime,
-        classId: selectedClass.id,
-        className: selectedClass.name
-      },
+      state: requestData,
     });
   };
 
@@ -130,20 +138,26 @@ const RoomReservation = () => {
   const getRoomIcon = (type: RoomType) => {
     switch (type) {
       case 'classroom':
-        return <Users className="h-4 w-4 text-gray-500" />;
+        return <BookOpen className="h-4 w-4 text-gray-500" />;
       case 'training_room':
         return <Presentation className="h-4 w-4 text-gray-500" />;
       case 'weapons_room':
         return <Swords className="h-4 w-4 text-gray-500" />;
       case 'tactical_room':
         return <MapPin className="h-4 w-4 text-gray-500" />;
+      case 'computer_lab':
+        return <Computer className="h-4 w-4 text-gray-500" />;
+      case 'science_lab':
+        return <Beaker className="h-4 w-4 text-gray-500" />;
+      case 'meeting_room':
+        return <Users className="h-4 w-4 text-gray-500" />;
       default:
         return <Building className="h-4 w-4 text-gray-500" />;
     }
   };
 
   // Get style for room type tab
-  const getRoomTypeStyle = (type: RoomType) => {
+  const getRoomTypeStyle = (type: RoomType | 'all') => {
     switch (type) {
       case 'classroom':
         return 'text-blue-600';
@@ -153,13 +167,21 @@ const RoomReservation = () => {
         return 'text-red-600';
       case 'tactical_room':
         return 'text-purple-600';
+      case 'computer_lab':
+        return 'text-orange-600';
+      case 'science_lab':
+        return 'text-green-800';
+      case 'meeting_room':
+        return 'text-indigo-600';
+      case 'all':
+        return 'text-gray-600';
       default:
         return '';
     }
   };
 
   // Translate room type to French
-  const translateRoomType = (type: RoomType): string => {
+  const translateRoomType = (type: RoomType | 'all'): string => {
     switch (type) {
       case 'classroom':
         return 'Salle de classe';
@@ -169,13 +191,23 @@ const RoomReservation = () => {
         return 'Salle d\'armes';
       case 'tactical_room':
         return 'Salle tactique';
+      case 'computer_lab':
+        return 'Laboratoire informatique';
+      case 'science_lab':
+        return 'Laboratoire scientifique';
+      case 'meeting_room':
+        return 'Salle de réunion';
+      case 'all':
+        return 'Toutes les salles';
       default:
         return type;
     }
   };
 
   // Filter rooms by current tab type
-  const filteredRooms = availableRooms.filter(room => room.type === currentTab);
+  const filteredRooms = currentTab === 'all' 
+    ? availableRooms 
+    : availableRooms.filter(room => room.type === currentTab);
 
   return (
     <Layout title="Réservation de salle">
@@ -194,10 +226,14 @@ const RoomReservation = () => {
                     <SelectValue placeholder="Sélectionner un type" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">Tous les types</SelectItem>
                     <SelectItem value="classroom">Salle de classe</SelectItem>
                     <SelectItem value="training_room">Salle de formation</SelectItem>
                     <SelectItem value="weapons_room">Salle d'armes</SelectItem>
                     <SelectItem value="tactical_room">Salle tactique</SelectItem>
+                    <SelectItem value="computer_lab">Laboratoire informatique</SelectItem>
+                    <SelectItem value="science_lab">Laboratoire scientifique</SelectItem>
+                    <SelectItem value="meeting_room">Salle de réunion</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -235,6 +271,7 @@ const RoomReservation = () => {
                   onSelect={setDate}
                   locale={fr}
                   className={cn("border rounded-md")}
+                  disabled={(date) => date < new Date()}
                 />
               </div>
               <div>
@@ -272,13 +309,20 @@ const RoomReservation = () => {
               <p>Chargement des salles disponibles...</p>
             ) : availableRooms.length > 0 ? (
               <>
-                <Tabs value={currentTab} onValueChange={(value) => setCurrentTab(value as RoomType)} className="mb-6">
-                  <TabsList className="w-full grid grid-cols-4">
+                <Tabs value={currentTab} onValueChange={(value) => setCurrentTab(value as RoomType | 'all')} className="mb-6">
+                  <TabsList className="w-full flex flex-wrap">
+                    <TabsTrigger 
+                      value="all" 
+                      className={currentTab === 'all' ? getRoomTypeStyle('all') : ''}
+                    >
+                      <Building className="h-4 w-4 mr-2" />
+                      Toutes
+                    </TabsTrigger>
                     <TabsTrigger 
                       value="classroom" 
                       className={currentTab === 'classroom' ? getRoomTypeStyle('classroom') : ''}
                     >
-                      <Users className="h-4 w-4 mr-2" />
+                      <BookOpen className="h-4 w-4 mr-2" />
                       Classe
                     </TabsTrigger>
                     <TabsTrigger 
@@ -302,9 +346,49 @@ const RoomReservation = () => {
                       <MapPin className="h-4 w-4 mr-2" />
                       Tactique
                     </TabsTrigger>
+                    <TabsTrigger 
+                      value="computer_lab" 
+                      className={currentTab === 'computer_lab' ? getRoomTypeStyle('computer_lab') : ''}
+                    >
+                      <Computer className="h-4 w-4 mr-2" />
+                      Informatique
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="science_lab" 
+                      className={currentTab === 'science_lab' ? getRoomTypeStyle('science_lab') : ''}
+                    >
+                      <Beaker className="h-4 w-4 mr-2" />
+                      Laboratoire
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="meeting_room" 
+                      className={currentTab === 'meeting_room' ? getRoomTypeStyle('meeting_room') : ''}
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      Réunion
+                    </TabsTrigger>
                   </TabsList>
 
-                  {(['classroom', 'training_room', 'weapons_room', 'tactical_room'] as RoomType[]).map((type) => (
+                  <TabsContent value="all" className="mt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filteredRooms.map((room) => (
+                        <Card key={room.id} className="cursor-pointer hover:shadow-md transition-shadow duration-200" onClick={() => handleRoomSelection(room)}>
+                          <CardContent className="flex flex-col space-y-2 pt-6">
+                            <div className="flex items-center space-x-2">
+                              {getRoomIcon(room.type)}
+                              <h3 className="text-sm font-semibold">{room.name}</h3>
+                            </div>
+                            <p className="text-xs text-gray-500">Type: {translateRoomType(room.type)}</p>
+                            <p className="text-xs text-gray-500">Capacité: {room.capacity} personnes</p>
+                            <p className="text-xs text-gray-500">Étage: {room.floor || 'Non spécifié'}</p>
+                            <p className="text-xs text-gray-500">Bâtiment: {room.building || 'Non spécifié'}</p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </TabsContent>
+
+                  {(['classroom', 'training_room', 'weapons_room', 'tactical_room', 'computer_lab', 'science_lab', 'meeting_room'] as RoomType[]).map((type) => (
                     <TabsContent key={type} value={type} className="mt-4">
                       {filteredRooms.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

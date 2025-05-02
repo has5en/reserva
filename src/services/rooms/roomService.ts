@@ -14,7 +14,9 @@ export const getRooms = async (): Promise<Room[]> => {
       type: room.type,
       equipment: room.equipment,
       floor: room.floor,
-      building: room.building
+      building: room.building,
+      description: room.description,
+      software: room.software
     })) || [];
   } catch (error) {
     console.error('Error fetching rooms:', error);
@@ -36,7 +38,9 @@ export const getRoomById = async (id: string): Promise<Room | null> => {
       type: data.type,
       equipment: data.equipment,
       floor: data.floor,
-      building: data.building
+      building: data.building,
+      description: data.description,
+      software: data.software
     };
   } catch (error) {
     console.error(`Error fetching room ${id}:`, error);
@@ -46,13 +50,23 @@ export const getRoomById = async (id: string): Promise<Room | null> => {
 
 export const getAvailableRoomsByType = async (type: RoomType, date: string, startTime: string, endTime: string): Promise<Room[]> => {
   try {
-    const { data, error } = await supabase
+    // Construire la requête de base pour obtenir toutes les salles du type demandé
+    let query = supabase
       .from('rooms')
       .select('*')
-      .eq('type', type)
       .eq('is_available', true);
     
+    // Si le type n'est pas "all", filtrer par le type spécifique
+    if (type !== 'all') {
+      query = query.eq('type', type);
+    }
+    
+    const { data, error } = await query;
+    
     if (error) throw error;
+    
+    // Filtrer les salles par disponibilité temporelle (à implémenter avec les réservations)
+    // Pour l'instant, retourne toutes les salles disponibles du type spécifié
     
     return data.map(room => ({
       id: room.id,
@@ -62,7 +76,9 @@ export const getAvailableRoomsByType = async (type: RoomType, date: string, star
       type: room.type,
       equipment: room.equipment,
       floor: room.floor,
-      building: room.building
+      building: room.building,
+      description: room.description,
+      software: room.software
     })) || [];
   } catch (error) {
     console.error('Error fetching available rooms:', error);
@@ -80,7 +96,9 @@ export const updateRoom = async (room: Room): Promise<void> => {
       type: room.type,
       equipment: room.equipment,
       floor: room.floor,
-      building: room.building
+      building: room.building,
+      description: room.description,
+      software: room.software
     };
     
     const { error } = await supabase.from('rooms').update(dbRoom).eq('id', room.id);
@@ -100,7 +118,9 @@ export const addRoom = async (room: Omit<Room, 'id'>): Promise<Room> => {
       type: room.type,
       equipment: room.equipment,
       floor: room.floor,
-      building: room.building
+      building: room.building,
+      description: room.description,
+      software: room.software
     };
     
     const { data, error } = await supabase.from('rooms').insert(dbRoom).select().single();
@@ -114,7 +134,9 @@ export const addRoom = async (room: Omit<Room, 'id'>): Promise<Room> => {
       type: data.type,
       equipment: data.equipment,
       floor: data.floor,
-      building: data.building
+      building: data.building,
+      description: data.description,
+      software: data.software
     };
   } catch (error) {
     console.error('Error adding room:', error);

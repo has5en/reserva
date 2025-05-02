@@ -1,7 +1,7 @@
 
 export type RequestStatus = 'pending' | 'admin_approved' | 'approved' | 'rejected' | 'returned';
 export type RequestType = 'room' | 'equipment' | 'printing';
-export type RoomType = 'classroom' | 'training_room' | 'weapons_room' | 'tactical_room';
+export type RoomType = 'classroom' | 'training_room' | 'weapons_room' | 'tactical_room' | 'computer_lab' | 'science_lab' | 'meeting_room' | 'all';
 export type UserRole = 'admin' | 'supervisor' | 'teacher';
 
 export interface Room {
@@ -132,6 +132,14 @@ export interface User {
   full_name?: string | null;
   department?: string | null;
   clearance_level?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Department {
+  id: string;
+  name: string;
+  description?: string;
   created_at?: string;
   updated_at?: string;
 }

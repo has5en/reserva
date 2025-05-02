@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Room, RoomType } from '@/data/models';
 import { getRooms } from '@/services/dataService';
-import { Building, Users, Presentation, Swords, MapPin } from 'lucide-react';
+import { Building, Users, Presentation, Swords, MapPin, Computer, Beaker } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -41,6 +41,12 @@ const AvailableRooms = () => {
         return <Swords className="h-5 w-5" />;
       case 'tactical_room':
         return <MapPin className="h-5 w-5" />;
+      case 'computer_lab':
+        return <Computer className="h-5 w-5" />;
+      case 'science_lab':
+        return <Beaker className="h-5 w-5" />;
+      case 'meeting_room':
+        return <Users className="h-5 w-5" />;
       default:
         return <Building className="h-5 w-5" />;
     }
@@ -56,6 +62,12 @@ const AvailableRooms = () => {
         return 'bg-red-100 text-red-800';
       case 'tactical_room':
         return 'bg-purple-100 text-purple-800';
+      case 'computer_lab':
+        return 'bg-orange-100 text-orange-800';
+      case 'science_lab':
+        return 'bg-emerald-100 text-emerald-800';
+      case 'meeting_room':
+        return 'bg-indigo-100 text-indigo-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -72,6 +84,12 @@ const AvailableRooms = () => {
         return 'Salles d\'armes';
       case 'tactical_room':
         return 'Salles tactiques';
+      case 'computer_lab':
+        return 'Laboratoires informatiques';
+      case 'science_lab':
+        return 'Laboratoires scientifiques';
+      case 'meeting_room':
+        return 'Salles de réunion';
       default:
         return type;
     }
@@ -98,12 +116,15 @@ const AvailableRooms = () => {
   return (
     <Layout title="Salles disponibles">
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as RoomType | 'all')} className="mb-6">
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 flex flex-wrap">
           <TabsTrigger value="all">Toutes les salles</TabsTrigger>
           <TabsTrigger value="classroom">Classes</TabsTrigger>
           <TabsTrigger value="training_room">Formation</TabsTrigger>
           <TabsTrigger value="weapons_room">Armes</TabsTrigger>
           <TabsTrigger value="tactical_room">Tactique</TabsTrigger>
+          <TabsTrigger value="computer_lab">Informatique</TabsTrigger>
+          <TabsTrigger value="science_lab">Laboratoire</TabsTrigger>
+          <TabsTrigger value="meeting_room">Réunion</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all">
@@ -118,6 +139,7 @@ const AvailableRooms = () => {
                     </span>
                     <h3 className="text-lg font-semibold">{room.name}</h3>
                   </div>
+                  <p className="text-sm">Type: {translateRoomType(room.type).slice(0, -1)}</p>
                   <p className="text-sm">Capacité: {room.capacity} personnes</p>
                   <p className="text-sm">Étage: {room.floor || 'Non spécifié'}</p>
                   <p className="text-sm">Bâtiment: {room.building || 'Non spécifié'}</p>
@@ -130,7 +152,7 @@ const AvailableRooms = () => {
           </div>
         </TabsContent>
 
-        {(['classroom', 'training_room', 'weapons_room', 'tactical_room'] as RoomType[]).map(type => (
+        {(['classroom', 'training_room', 'weapons_room', 'tactical_room', 'computer_lab', 'science_lab', 'meeting_room'] as RoomType[]).map(type => (
           <TabsContent key={type} value={type}>
             <h2 className="text-lg font-semibold mb-4">{translateRoomType(type)} ({filteredRooms.length})</h2>
             {filteredRooms.length > 0 ? (

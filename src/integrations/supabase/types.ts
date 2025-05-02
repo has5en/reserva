@@ -36,6 +36,30 @@ export type Database = {
         }
         Relationships: []
       }
+      departments: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       equipment: {
         Row: {
           available_quantity: number
@@ -268,6 +292,9 @@ export type Database = {
         | "training_room"
         | "weapons_room"
         | "tactical_room"
+        | "computer_lab"
+        | "science_lab"
+        | "meeting_room"
       user_role: "admin" | "supervisor" | "teacher"
     }
     CompositeTypes: {
@@ -390,6 +417,9 @@ export const Constants = {
         "training_room",
         "weapons_room",
         "tactical_room",
+        "computer_lab",
+        "science_lab",
+        "meeting_room",
       ],
       user_role: ["admin", "supervisor", "teacher"],
     },

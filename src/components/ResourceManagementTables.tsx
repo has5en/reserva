@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Room, 
@@ -48,6 +47,9 @@ interface EquipmentManagementTableProps {
 
 const roomTypeOptions = [
   { value: 'classroom', label: 'Salle de cours' },
+  { value: 'training_room', label: 'Salle de formation' },
+  { value: 'weapons_room', label: 'Salle d\'armes' },
+  { value: 'tactical_room', label: 'Salle tactique' },
   { value: 'computer_lab', label: 'Laboratoire informatique' },
   { value: 'science_lab', label: 'Laboratoire scientifique' },
   { value: 'meeting_room', label: 'Salle de réunion' }
