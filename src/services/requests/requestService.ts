@@ -1,17 +1,20 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Request, RequestStatus } from '@/data/models';
+import { toast } from '@/components/ui/use-toast';
 
 export const getAllRequests = async (): Promise<Request[]> => {
   try {
-    // Change 'requests' to 'reservations' to match the actual table name
+    console.log('Fetching all reservations from database...');
     const { data, error } = await supabase
       .from('reservations')
       .select('*');
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching all requests:', error);
+      throw error;
+    }
     
-    // Transform database rows to match the Request interface
+    console.log('Reservations fetched successfully:', data);
     return transformRequestsData(data || []);
   } catch (error) {
     console.error('Error fetching all requests:', error);
@@ -26,14 +29,19 @@ export const getRequestsByStatus = async (status: RequestStatus): Promise<Reques
   try {
     // Convert our application's status to database status
     const dbStatus = convertRequestStatusToDb(status);
+    console.log(`Fetching requests with status ${status} (DB status: ${dbStatus})`);
     
     const { data, error } = await supabase
       .from('reservations')
       .select('*')
       .eq('status', dbStatus);
     
-    if (error) throw error;
+    if (error) {
+      console.error(`Error fetching requests with status ${status}:`, error);
+      throw error;
+    }
     
+    console.log(`Fetched ${data?.length || 0} requests with status ${status}`);
     return transformRequestsData(data || []);
   } catch (error) {
     console.error(`Error fetching requests with status ${status}:`, error);
@@ -43,13 +51,18 @@ export const getRequestsByStatus = async (status: RequestStatus): Promise<Reques
 
 export const getRequestsByUserId = async (userId: string): Promise<Request[]> => {
   try {
+    console.log(`Fetching requests for user ${userId}`);
     const { data, error } = await supabase
       .from('reservations')
       .select('*')
       .eq('user_id', userId);
     
-    if (error) throw error;
+    if (error) {
+      console.error(`Error fetching requests for user ${userId}:`, error);
+      throw error;
+    }
     
+    console.log(`Fetched ${data?.length || 0} requests for user ${userId}`);
     return transformRequestsData(data || []);
   } catch (error) {
     console.error(`Error fetching requests for user ${userId}:`, error);
@@ -59,16 +72,24 @@ export const getRequestsByUserId = async (userId: string): Promise<Request[]> =>
 
 export const getRequestById = async (id: string): Promise<Request | null> => {
   try {
+    console.log(`Fetching request with ID: ${id}`);
     const { data, error } = await supabase
       .from('reservations')
       .select('*')
       .eq('id', id)
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error(`Error fetching request ${id}:`, error);
+      throw error;
+    }
     
-    if (!data) return null;
+    if (!data) {
+      console.log(`No request found with ID: ${id}`);
+      return null;
+    }
     
+    console.log('Request fetched successfully:', data);
     return transformRequestData(data);
   } catch (error) {
     console.error(`Error fetching request ${id}:`, error);
@@ -111,30 +132,40 @@ export const getRequestsByEquipmentId = async (equipmentId: string): Promise<Req
   }
 };
 
-export const addRoomRequest = async (requestData: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
+export const addRoomRequest = async (requestData: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<Request | null> => {
   console.log('Adding room request:', requestData);
   
   try {
     // Transform to database schema and convert status to DB format
     const dbStatus = convertRequestStatusToDb(requestData.status);
     
-    // Format de date ISO pour la base de données
-    const formattedDate = requestData.date ? new Date(requestData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    // Ensure proper date formatting for the database
+    let formattedDate = requestData.date;
+    if (requestData.date) {
+      // Ensure date is in YYYY-MM-DD format
+      formattedDate = new Date(requestData.date).toISOString().split('T')[0];
+    } else {
+      formattedDate = new Date().toISOString().split('T')[0];
+    }
+    
+    // Ensure we have valid start and end times
+    const startTime = requestData.startTime || new Date().toISOString();
+    const endTime = requestData.endTime || new Date().toISOString();
     
     const dbData = {
       type: requestData.type,
       status: dbStatus,
       user_id: requestData.userId,
-      user_name: requestData.userName,
+      user_name: requestData.userName || 'Unknown User',
       room_id: requestData.roomId,
       room_name: requestData.roomName,
       class_id: requestData.classId,
       class_name: requestData.className,
-      start_time: requestData.startTime,
-      end_time: requestData.endTime,
+      start_time: startTime,
+      end_time: endTime,
       date: formattedDate,
-      notes: requestData.notes,
-      purpose: requestData.notes, // Map notes to purpose as it seems to be the equivalent field
+      notes: requestData.notes || '',
+      purpose: requestData.notes || '', // Map notes to purpose as it seems to be the equivalent field
       requires_commander_approval: requestData.requires_commander_approval || false
     };
 
@@ -147,41 +178,67 @@ export const addRoomRequest = async (requestData: Omit<Request, 'id' | 'createdA
       
     if (error) {
       console.error('Database error when adding room request:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur lors de la soumission",
+        description: `Erreur: ${error.message}`
+      });
       throw error;
     }
     
-    console.log('Room request added successfully:', data);
-  } catch (error) {
+    if (data && data.length > 0) {
+      console.log('Room request added successfully:', data[0]);
+      return transformRequestData(data[0]);
+    } else {
+      console.log('Room request added but no data returned');
+      return null;
+    }
+  } catch (error: any) {
     console.error('Error adding room request:', error);
+    toast({
+      variant: "destructive",
+      title: "Erreur lors de la soumission",
+      description: `Erreur: ${error.message || "Une erreur inattendue s'est produite"}`
+    });
     throw error;
   }
 };
 
-export const addEquipmentRequest = async (requestData: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
+export const addEquipmentRequest = async (requestData: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<Request | null> => {
   console.log('Adding equipment request:', requestData);
   
   try {
     // Transform to database schema and convert status to DB format
     const dbStatus = convertRequestStatusToDb(requestData.status);
     
-    // Format de date ISO pour la base de données
-    const formattedDate = requestData.date ? new Date(requestData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    // Ensure proper date formatting for the database
+    let formattedDate = requestData.date;
+    if (requestData.date) {
+      // Ensure date is in YYYY-MM-DD format
+      formattedDate = new Date(requestData.date).toISOString().split('T')[0];
+    } else {
+      formattedDate = new Date().toISOString().split('T')[0];
+    }
+    
+    // Ensure we have valid start and end times
+    const startTime = requestData.startTime || new Date().toISOString();
+    const endTime = requestData.endTime || new Date().toISOString();
     
     const dbData = {
       type: requestData.type,
       status: dbStatus,
       user_id: requestData.userId,
-      user_name: requestData.userName,
+      user_name: requestData.userName || 'Unknown User',
       equipment_id: requestData.equipmentId,
       equipment_name: requestData.equipmentName,
       equipment_quantity: requestData.equipmentQuantity || 1,
       class_id: requestData.classId,
       class_name: requestData.className,
-      start_time: requestData.startTime || new Date().toISOString(), // Provide default value if missing
-      end_time: requestData.endTime || new Date().toISOString(), // Provide default value if missing
+      start_time: startTime,
+      end_time: endTime,
       date: formattedDate,
-      notes: requestData.notes,
-      purpose: requestData.notes, // Map notes to purpose as it seems to be the equivalent field
+      notes: requestData.notes || '',
+      purpose: requestData.notes || '', // Map notes to purpose as it seems to be the equivalent field
       requires_commander_approval: requestData.requires_commander_approval || false
     };
     
@@ -194,46 +251,71 @@ export const addEquipmentRequest = async (requestData: Omit<Request, 'id' | 'cre
       
     if (error) {
       console.error('Database error when adding equipment request:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur lors de la soumission",
+        description: `Erreur: ${error.message}`
+      });
       throw error;
     }
     
-    console.log('Equipment request added successfully:', data);
-  } catch (error) {
+    if (data && data.length > 0) {
+      console.log('Equipment request added successfully:', data[0]);
+      return transformRequestData(data[0]);
+    } else {
+      console.log('Equipment request added but no data returned');
+      return null;
+    }
+  } catch (error: any) {
     console.error('Error adding equipment request:', error);
+    toast({
+      variant: "destructive",
+      title: "Erreur lors de la soumission",
+      description: `Erreur: ${error.message || "Une erreur inattendue s'est produite"}`
+    });
     throw error;
   }
 };
 
-export const addPrintingRequest = async (requestData: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
+export const addPrintingRequest = async (requestData: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<Request | null> => {
   console.log('Adding printing request:', requestData);
   
   try {
     // Transform to database schema and convert status to DB format
     const dbStatus = convertRequestStatusToDb(requestData.status);
     
-    // Format de date ISO pour la base de données
-    const formattedDate = requestData.date ? new Date(requestData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    // Ensure proper date formatting for the database
+    let formattedDate = requestData.date;
+    if (requestData.date) {
+      // Ensure date is in YYYY-MM-DD format
+      formattedDate = new Date(requestData.date).toISOString().split('T')[0];
+    } else {
+      formattedDate = new Date().toISOString().split('T')[0];
+    }
+    
+    // For printing requests, we still need start_time and end_time for the database
+    const currentTime = new Date().toISOString();
     
     const dbData = {
       type: requestData.type,
       status: dbStatus,
       user_id: requestData.userId,
-      user_name: requestData.userName,
+      user_name: requestData.userName || 'Unknown User',
       class_id: requestData.classId,
       class_name: requestData.className,
-      start_time: new Date().toISOString(), // Provide default value for required field
-      end_time: new Date().toISOString(), // Provide default value for required field
+      start_time: currentTime, // Use current time as default
+      end_time: currentTime, // Use current time as default
       date: formattedDate,
-      notes: requestData.notes,
-      purpose: requestData.notes, // Map notes to purpose as it seems to be the equivalent field
-      document_name: requestData.documentName,
-      page_count: requestData.pageCount,
-      color_print: requestData.colorPrint,
-      double_sided: requestData.doubleSided,
-      copies: requestData.copies,
-      pdf_file_name: requestData.pdfFileName,
+      notes: requestData.notes || '',
+      purpose: requestData.notes || '', // Map notes to purpose
+      document_name: requestData.documentName || '',
+      page_count: requestData.pageCount || 1,
+      color_print: requestData.colorPrint || false,
+      double_sided: requestData.doubleSided || false,
+      copies: requestData.copies || 1,
+      pdf_file_name: requestData.pdfFileName || '',
       requires_commander_approval: requestData.requires_commander_approval || false,
-      signature: requestData.signature
+      signature: requestData.signature || ''
     };
     
     console.log('Data prepared for submission to database:', dbData);
@@ -245,26 +327,49 @@ export const addPrintingRequest = async (requestData: Omit<Request, 'id' | 'crea
       
     if (error) {
       console.error('Database error when adding printing request:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur lors de la soumission", 
+        description: `Erreur: ${error.message}`
+      });
       throw error;
     }
     
-    console.log('Printing request added successfully:', data);
-  } catch (error) {
+    if (data && data.length > 0) {
+      console.log('Printing request added successfully:', data[0]);
+      return transformRequestData(data[0]);
+    } else {
+      console.log('Printing request added but no data returned');
+      return null;
+    }
+  } catch (error: any) {
     console.error('Error adding printing request:', error);
+    toast({
+      variant: "destructive",
+      title: "Erreur lors de la soumission",
+      description: `Erreur: ${error.message || "Une erreur inattendue s'est produite"}`
+    });
     throw error;
   }
 };
 
-export const createRequest = async (requestData: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
+export const createRequest = async (requestData: Omit<Request, 'id' | 'createdAt' | 'updatedAt'>): Promise<Request | null> => {
   console.log('Creating request:', requestData);
   
-  // Route to the appropriate request creation function based on type
-  if (requestData.type === 'room') {
-    return addRoomRequest(requestData);
-  } else if (requestData.type === 'equipment') {
-    return addEquipmentRequest(requestData);
-  } else if (requestData.type === 'printing') {
-    return addPrintingRequest(requestData);
+  try {
+    // Route to the appropriate request creation function based on type
+    if (requestData.type === 'room') {
+      return await addRoomRequest(requestData);
+    } else if (requestData.type === 'equipment') {
+      return await addEquipmentRequest(requestData);
+    } else if (requestData.type === 'printing') {
+      return await addPrintingRequest(requestData);
+    }
+    
+    throw new Error(`Invalid request type: ${requestData.type}`);
+  } catch (error) {
+    console.error('Error in createRequest:', error);
+    throw error; // Re-throw to let calling code handle it
   }
 };
 

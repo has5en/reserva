@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,7 +11,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Equipment, Class } from '@/data/models';
-import { getAvailableEquipment, getClasses, createRequest } from '@/services/dataService';
+import { getAvailableEquipment } from '@/services/equipment/equipmentService';
+import { getClasses } from '@/services/classes/classService';
+import { createRequest } from '@/services/requests/requestService';
 
 const EquipmentRequest = () => {
   const { currentUser } = useAuth();
@@ -96,7 +97,9 @@ const EquipmentRequest = () => {
     setSubmitting(true);
     
     try {
-      if (!currentUser) throw new Error('User not authenticated');
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
       
       const selectedEquipmentData = equipment.find(eq => eq.id === selectedEquipment);
       const selectedClassData = classes.find(cls => cls.id === selectedClass);
@@ -105,11 +108,11 @@ const EquipmentRequest = () => {
         throw new Error('Invalid selection');
       }
       
-      await createRequest({
+      const result = await createRequest({
         type: 'equipment',
         status: 'pending',
         userId: currentUser.id,
-        userName: currentUser.name,
+        userName: currentUser.name || currentUser.full_name || 'Unknown User',
         equipmentId: selectedEquipmentData.id,
         equipmentName: selectedEquipmentData.name,
         equipmentQuantity: quantity,
@@ -120,18 +123,22 @@ const EquipmentRequest = () => {
         signature: signature || '',
       });
       
-      toast({
-        title: 'Demande soumise',
-        description: 'Votre demande de matériel a été soumise avec succès.',
-      });
-      
-      navigate('/dashboard');
-    } catch (error) {
+      if (result) {
+        toast({
+          title: 'Demande soumise',
+          description: 'Votre demande de matériel a été soumise avec succès.',
+        });
+        
+        navigate('/dashboard');
+      } else {
+        throw new Error('Failed to create request');
+      }
+    } catch (error: any) {
       console.error('Failed to submit request:', error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
-        description: 'Impossible de soumettre la demande. Veuillez réessayer.',
+        description: `Impossible de soumettre la demande: ${error.message || 'Erreur inconnue'}`,
       });
     } finally {
       setSubmitting(false);

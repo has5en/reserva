@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,7 +12,8 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Class } from '@/data/models';
-import { getClasses, createRequest } from '@/services/dataService';
+import { getClasses } from '@/services/classes/classService';
+import { createRequest } from '@/services/requests/requestService';
 import { Printer, Copy, FileText, Files, Palette, Upload, File, FileUp } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -46,6 +46,7 @@ const PrintingRequest = () => {
       setLoading(true);
       try {
         const classesData = await getClasses();
+        console.log("Classes loaded:", classesData);
         setClasses(classesData);
       } catch (error) {
         console.error('Failed to fetch data:', error);
@@ -127,7 +128,9 @@ const PrintingRequest = () => {
     setSubmitting(true);
     
     try {
-      if (!currentUser) throw new Error('User not authenticated');
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
       
       const selectedClassData = classes.find(cls => cls.id === selectedClass);
       
@@ -139,11 +142,11 @@ const PrintingRequest = () => {
       // For this demo, we'll just use the file name
       const pdfFileName = pdfFile ? pdfFile.name : '';
       
-      await createRequest({
+      const result = await createRequest({
         type: 'printing',
         status: 'pending',
         userId: currentUser.id,
-        userName: currentUser.name,
+        userName: currentUser.name || currentUser.full_name || 'Unknown User',
         classId: selectedClassData.id,
         className: selectedClassData.name,
         date,
@@ -157,18 +160,22 @@ const PrintingRequest = () => {
         pdfFileName
       });
       
-      toast({
-        title: 'Demande soumise',
-        description: 'Votre demande d\'impression a été soumise avec succès.',
-      });
-      
-      navigate('/dashboard');
-    } catch (error) {
+      if (result) {
+        toast({
+          title: 'Demande soumise',
+          description: 'Votre demande d\'impression a été soumise avec succès.',
+        });
+        
+        navigate('/dashboard');
+      } else {
+        throw new Error('Failed to create request');
+      }
+    } catch (error: any) {
       console.error('Failed to submit request:', error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
-        description: 'Impossible de soumettre la demande. Veuillez réessayer.',
+        description: `Impossible de soumettre la demande: ${error.message || 'Erreur inconnue'}`,
       });
     } finally {
       setSubmitting(false);
