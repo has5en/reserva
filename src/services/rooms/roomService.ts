@@ -89,10 +89,8 @@ export const getAvailableRoomsByType = async (type: RoomType | 'all', date: stri
 
 export const updateRoom = async (room: Room): Promise<void> => {
   try {
-    // Vérifier que le type n'est pas 'all' pour ne pas enfreindre la contrainte de la base de données
-    if (room.type === 'all') {
-      throw new Error("'all' n'est pas un type de salle valide pour la base de données");
-    }
+    // Since RoomType doesn't include 'all', this check is not needed
+    // The room.type can only be valid RoomType values in a properly typed Room object
     
     const dbRoom = {
       id: room.id,
@@ -117,10 +115,8 @@ export const updateRoom = async (room: Room): Promise<void> => {
 
 export const addRoom = async (room: Omit<Room, 'id'>): Promise<Room> => {
   try {
-    // Nous devons nous assurer que le type 'all' n'est pas envoyé à la base de données
-    if (room.type === 'all') {
-      throw new Error("'all' n'est pas un type de salle valide pour la base de données");
-    }
+    // Since RoomType doesn't include 'all', this check is not needed
+    // The room.type can only be valid RoomType values in a properly typed Room object
     
     const dbRoom = {
       name: room.name,
