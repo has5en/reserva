@@ -4,7 +4,7 @@ import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/data/models';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import UserManagementTable from '@/components/UserManagementTable';
+import UserManagementTableWithFilters from '@/components/UserManagementTableWithFilters';
 import TeacherDepartmentSelector from '@/components/TeacherDepartmentSelector';
 
 const UserManagement = () => {
@@ -63,16 +63,16 @@ const UserManagement = () => {
         
         {showTeachersTab && (
           <TabsContent value="teachers">
-            <UserManagementTable 
+            <UserManagementTableWithFilters 
               userRole="teacher" 
-              department={selectedDepartment || undefined} 
+              department={selectedDepartment} 
             />
           </TabsContent>
         )}
         
         {showAdminsTab && (
           <TabsContent value="admins">
-            <UserManagementTable userRole="admin" />
+            <UserManagementTableWithFilters userRole="admin" />
           </TabsContent>
         )}
       </Tabs>
