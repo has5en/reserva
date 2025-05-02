@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import { Room, RoomType } from '@/data/models';
+import { Room, RoomType, RoomTypeWithAll } from '@/data/models';
 import { getRooms } from '@/services/dataService';
-import { Building, Users, Presentation, Swords, MapPin, Computer, Beaker } from 'lucide-react';
+import { Building, Users, Presentation, Swords, MapPin, Computer, Beaker, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,7 +11,7 @@ const AvailableRooms = () => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<RoomType | 'all'>('all');
+  const [activeTab, setActiveTab] = useState<RoomTypeWithAll>('all');
 
   useEffect(() => {
     fetchRooms();
@@ -115,7 +114,7 @@ const AvailableRooms = () => {
 
   return (
     <Layout title="Salles disponibles">
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as RoomType | 'all')} className="mb-6">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as RoomTypeWithAll)} className="mb-6">
         <TabsList className="mb-4 flex flex-wrap">
           <TabsTrigger value="all">Toutes les salles</TabsTrigger>
           <TabsTrigger value="classroom">Classes</TabsTrigger>

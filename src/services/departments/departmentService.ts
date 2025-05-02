@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { Department } from '@/data/models';
+import { Department, User } from '@/data/models';
 
 export const getDepartments = async (): Promise<Department[]> => {
   try {

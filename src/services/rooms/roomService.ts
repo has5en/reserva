@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Room, RoomType } from '@/data/models';
+import { Room, RoomType, RoomTypeWithAll } from '@/data/models';
 
 export const getRooms = async (): Promise<Room[]> => {
   try {
@@ -11,12 +11,12 @@ export const getRooms = async (): Promise<Room[]> => {
       name: room.name,
       capacity: room.capacity,
       available: room.is_available || false,
-      type: room.type,
-      equipment: room.equipment,
-      floor: room.floor,
-      building: room.building,
-      description: room.description,
-      software: room.software
+      type: room.type as RoomType,
+      equipment: room.equipment || [],
+      floor: room.floor || '',
+      building: room.building || '',
+      description: room.description || '',
+      software: room.software || []
     })) || [];
   } catch (error) {
     console.error('Error fetching rooms:', error);
@@ -35,12 +35,12 @@ export const getRoomById = async (id: string): Promise<Room | null> => {
       name: data.name,
       capacity: data.capacity,
       available: data.is_available || false,
-      type: data.type,
-      equipment: data.equipment,
-      floor: data.floor,
-      building: data.building,
-      description: data.description,
-      software: data.software
+      type: data.type as RoomType,
+      equipment: data.equipment || [],
+      floor: data.floor || '',
+      building: data.building || '',
+      description: data.description || '',
+      software: data.software || []
     };
   } catch (error) {
     console.error(`Error fetching room ${id}:`, error);
@@ -48,7 +48,7 @@ export const getRoomById = async (id: string): Promise<Room | null> => {
   }
 };
 
-export const getAvailableRoomsByType = async (type: RoomType, date: string, startTime: string, endTime: string): Promise<Room[]> => {
+export const getAvailableRoomsByType = async (type: RoomTypeWithAll, date: string, startTime: string, endTime: string): Promise<Room[]> => {
   try {
     // Construire la requête de base pour obtenir toutes les salles du type demandé
     let query = supabase
@@ -73,12 +73,12 @@ export const getAvailableRoomsByType = async (type: RoomType, date: string, star
       name: room.name,
       capacity: room.capacity,
       available: room.is_available || false,
-      type: room.type,
-      equipment: room.equipment,
-      floor: room.floor,
-      building: room.building,
-      description: room.description,
-      software: room.software
+      type: room.type as RoomType,
+      equipment: room.equipment || [],
+      floor: room.floor || '',
+      building: room.building || '',
+      description: room.description || '',
+      software: room.software || []
     })) || [];
   } catch (error) {
     console.error('Error fetching available rooms:', error);
@@ -94,11 +94,11 @@ export const updateRoom = async (room: Room): Promise<void> => {
       capacity: room.capacity,
       is_available: room.available,
       type: room.type,
-      equipment: room.equipment,
-      floor: room.floor,
-      building: room.building,
-      description: room.description,
-      software: room.software
+      equipment: room.equipment || [],
+      floor: room.floor || '',
+      building: room.building || '',
+      description: room.description || '',
+      software: room.software || []
     };
     
     const { error } = await supabase.from('rooms').update(dbRoom).eq('id', room.id);
@@ -111,16 +111,19 @@ export const updateRoom = async (room: Room): Promise<void> => {
 
 export const addRoom = async (room: Omit<Room, 'id'>): Promise<Room> => {
   try {
+    // Nous devons nous assurer que le type 'all' n'est pas envoyé à la base de données
+    const roomType = room.type === 'all' ? 'classroom' : room.type;
+    
     const dbRoom = {
       name: room.name,
       capacity: room.capacity,
       is_available: room.available,
-      type: room.type,
-      equipment: room.equipment,
-      floor: room.floor,
-      building: room.building,
-      description: room.description,
-      software: room.software
+      type: roomType,
+      equipment: room.equipment || [],
+      floor: room.floor || '',
+      building: room.building || '',
+      description: room.description || '',
+      software: room.software || []
     };
     
     const { data, error } = await supabase.from('rooms').insert(dbRoom).select().single();
@@ -131,12 +134,12 @@ export const addRoom = async (room: Omit<Room, 'id'>): Promise<Room> => {
       name: data.name,
       capacity: data.capacity,
       available: data.is_available || false,
-      type: data.type,
-      equipment: data.equipment,
-      floor: data.floor,
-      building: data.building,
-      description: data.description,
-      software: data.software
+      type: data.type as RoomType,
+      equipment: data.equipment || [],
+      floor: data.floor || '',
+      building: data.building || '',
+      description: data.description || '',
+      software: data.software || []
     };
   } catch (error) {
     console.error('Error adding room:', error);

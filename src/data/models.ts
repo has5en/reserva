@@ -1,7 +1,8 @@
 
 export type RequestStatus = 'pending' | 'admin_approved' | 'approved' | 'rejected' | 'returned';
 export type RequestType = 'room' | 'equipment' | 'printing';
-export type RoomType = 'classroom' | 'training_room' | 'weapons_room' | 'tactical_room' | 'computer_lab' | 'science_lab' | 'meeting_room' | 'all';
+export type RoomType = 'classroom' | 'training_room' | 'weapons_room' | 'tactical_room' | 'computer_lab' | 'science_lab' | 'meeting_room';
+export type RoomTypeWithAll = RoomType | 'all';
 export type UserRole = 'admin' | 'supervisor' | 'teacher';
 
 export interface Room {
