@@ -118,6 +118,9 @@ export const addRoomRequest = async (requestData: Omit<Request, 'id' | 'createdA
     // Transform to database schema and convert status to DB format
     const dbStatus = convertRequestStatusToDb(requestData.status);
     
+    // Format de date ISO pour la base de données
+    const formattedDate = requestData.date ? new Date(requestData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    
     const dbData = {
       type: requestData.type,
       status: dbStatus,
@@ -129,17 +132,25 @@ export const addRoomRequest = async (requestData: Omit<Request, 'id' | 'createdA
       class_name: requestData.className,
       start_time: requestData.startTime,
       end_time: requestData.endTime,
-      date: requestData.date,
+      date: formattedDate,
       notes: requestData.notes,
       purpose: requestData.notes, // Map notes to purpose as it seems to be the equivalent field
-      requires_commander_approval: requestData.requires_commander_approval
+      requires_commander_approval: requestData.requires_commander_approval || false
     };
+
+    console.log('Data prepared for submission to database:', dbData);
     
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from('reservations')
-      .insert(dbData);
+      .insert(dbData)
+      .select();
       
-    if (error) throw error;
+    if (error) {
+      console.error('Database error when adding room request:', error);
+      throw error;
+    }
+    
+    console.log('Room request added successfully:', data);
   } catch (error) {
     console.error('Error adding room request:', error);
     throw error;
@@ -153,6 +164,9 @@ export const addEquipmentRequest = async (requestData: Omit<Request, 'id' | 'cre
     // Transform to database schema and convert status to DB format
     const dbStatus = convertRequestStatusToDb(requestData.status);
     
+    // Format de date ISO pour la base de données
+    const formattedDate = requestData.date ? new Date(requestData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    
     const dbData = {
       type: requestData.type,
       status: dbStatus,
@@ -160,22 +174,30 @@ export const addEquipmentRequest = async (requestData: Omit<Request, 'id' | 'cre
       user_name: requestData.userName,
       equipment_id: requestData.equipmentId,
       equipment_name: requestData.equipmentName,
-      equipment_quantity: requestData.equipmentQuantity,
+      equipment_quantity: requestData.equipmentQuantity || 1,
       class_id: requestData.classId,
       class_name: requestData.className,
       start_time: requestData.startTime || new Date().toISOString(), // Provide default value if missing
       end_time: requestData.endTime || new Date().toISOString(), // Provide default value if missing
-      date: requestData.date,
+      date: formattedDate,
       notes: requestData.notes,
       purpose: requestData.notes, // Map notes to purpose as it seems to be the equivalent field
-      requires_commander_approval: requestData.requires_commander_approval
+      requires_commander_approval: requestData.requires_commander_approval || false
     };
     
-    const { error } = await supabase
+    console.log('Data prepared for submission to database:', dbData);
+    
+    const { error, data } = await supabase
       .from('reservations')
-      .insert(dbData);
+      .insert(dbData)
+      .select();
       
-    if (error) throw error;
+    if (error) {
+      console.error('Database error when adding equipment request:', error);
+      throw error;
+    }
+    
+    console.log('Equipment request added successfully:', data);
   } catch (error) {
     console.error('Error adding equipment request:', error);
     throw error;
@@ -189,6 +211,9 @@ export const addPrintingRequest = async (requestData: Omit<Request, 'id' | 'crea
     // Transform to database schema and convert status to DB format
     const dbStatus = convertRequestStatusToDb(requestData.status);
     
+    // Format de date ISO pour la base de données
+    const formattedDate = requestData.date ? new Date(requestData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    
     const dbData = {
       type: requestData.type,
       status: dbStatus,
@@ -198,7 +223,7 @@ export const addPrintingRequest = async (requestData: Omit<Request, 'id' | 'crea
       class_name: requestData.className,
       start_time: new Date().toISOString(), // Provide default value for required field
       end_time: new Date().toISOString(), // Provide default value for required field
-      date: requestData.date,
+      date: formattedDate,
       notes: requestData.notes,
       purpose: requestData.notes, // Map notes to purpose as it seems to be the equivalent field
       document_name: requestData.documentName,
@@ -207,15 +232,23 @@ export const addPrintingRequest = async (requestData: Omit<Request, 'id' | 'crea
       double_sided: requestData.doubleSided,
       copies: requestData.copies,
       pdf_file_name: requestData.pdfFileName,
-      requires_commander_approval: requestData.requires_commander_approval,
+      requires_commander_approval: requestData.requires_commander_approval || false,
       signature: requestData.signature
     };
     
-    const { error } = await supabase
+    console.log('Data prepared for submission to database:', dbData);
+    
+    const { error, data } = await supabase
       .from('reservations')
-      .insert(dbData);
+      .insert(dbData)
+      .select();
       
-    if (error) throw error;
+    if (error) {
+      console.error('Database error when adding printing request:', error);
+      throw error;
+    }
+    
+    console.log('Printing request added successfully:', data);
   } catch (error) {
     console.error('Error adding printing request:', error);
     throw error;
