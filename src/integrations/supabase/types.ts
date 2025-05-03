@@ -99,6 +99,140 @@ export type Database = {
         }
         Relationships: []
       }
+      equipment_requests: {
+        Row: {
+          class_id: string | null
+          class_name: string
+          created_at: string
+          date: string
+          equipment_id: string | null
+          equipment_name: string
+          equipment_quantity: number
+          id: string
+          notes: string | null
+          signature: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          class_id?: string | null
+          class_name: string
+          created_at?: string
+          date: string
+          equipment_id?: string | null
+          equipment_name: string
+          equipment_quantity?: number
+          id?: string
+          notes?: string | null
+          signature?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          class_id?: string | null
+          class_name?: string
+          created_at?: string
+          date?: string
+          equipment_id?: string | null
+          equipment_name?: string
+          equipment_quantity?: number
+          id?: string
+          notes?: string | null
+          signature?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_requests_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_requests_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      printing_requests: {
+        Row: {
+          class_id: string | null
+          class_name: string
+          color_print: boolean | null
+          copies: number
+          created_at: string
+          date: string
+          document_name: string
+          double_sided: boolean | null
+          id: string
+          notes: string | null
+          page_count: number
+          pdf_file_name: string | null
+          signature: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          class_id?: string | null
+          class_name: string
+          color_print?: boolean | null
+          copies?: number
+          created_at?: string
+          date: string
+          document_name: string
+          double_sided?: boolean | null
+          id?: string
+          notes?: string | null
+          page_count?: number
+          pdf_file_name?: string | null
+          signature?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          class_id?: string | null
+          class_name?: string
+          color_print?: boolean | null
+          copies?: number
+          created_at?: string
+          date?: string
+          document_name?: string
+          double_sided?: boolean | null
+          id?: string
+          notes?: string | null
+          page_count?: number
+          pdf_file_name?: string | null
+          signature?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printing_requests_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -200,6 +334,78 @@ export type Database = {
           },
           {
             foreignKeyName: "reservations_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_requests: {
+        Row: {
+          class_id: string | null
+          class_name: string
+          created_at: string
+          date: string
+          end_time: string
+          id: string
+          notes: string | null
+          participants: number | null
+          requires_commander_approval: boolean | null
+          room_id: string | null
+          room_name: string
+          start_time: string
+          status: string
+          updated_at: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          class_id?: string | null
+          class_name: string
+          created_at?: string
+          date: string
+          end_time: string
+          id?: string
+          notes?: string | null
+          participants?: number | null
+          requires_commander_approval?: boolean | null
+          room_id?: string | null
+          room_name: string
+          start_time: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          class_id?: string | null
+          class_name?: string
+          created_at?: string
+          date?: string
+          end_time?: string
+          id?: string
+          notes?: string | null
+          participants?: number | null
+          requires_commander_approval?: boolean | null
+          room_id?: string | null
+          room_name?: string
+          start_time?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_requests_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_requests_room_id_fkey"
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"

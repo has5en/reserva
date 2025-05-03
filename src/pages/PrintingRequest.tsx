@@ -142,6 +142,9 @@ const PrintingRequest = () => {
       // For this demo, we'll just use the file name
       const pdfFileName = pdfFile ? pdfFile.name : '';
       
+      console.log('Current user information:', currentUser);
+      console.log('Selected class data:', selectedClassData);
+
       const result = await createRequest({
         type: 'printing',
         status: 'pending',

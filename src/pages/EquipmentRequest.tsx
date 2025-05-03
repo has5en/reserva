@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -107,6 +108,8 @@ const EquipmentRequest = () => {
       if (!selectedEquipmentData || !selectedClassData) {
         throw new Error('Invalid selection');
       }
+
+      console.log('Current user information:', currentUser);
       
       const result = await createRequest({
         type: 'equipment',
