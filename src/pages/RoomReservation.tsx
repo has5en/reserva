@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,6 +18,7 @@ import { fr } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import RoomTypeSelector from '@/components/RoomTypeSelector';
 import { combineDateAndTime } from '@/services/utils/dateUtils';
+import { createRequest } from '@/services/requests/requestService';
 
 const RoomReservation = () => {
   const navigate = useNavigate();
@@ -114,28 +114,43 @@ const RoomReservation = () => {
       return;
     }
 
-    // Préparation des données pour la demande de réservation
-    const formattedStartTime = combineDateAndTime(date.toISOString(), startTime);
-    const formattedEndTime = combineDateAndTime(date.toISOString(), endTime);
-    
-    const requestData = {
-      type: 'room' as const,
-      roomId: room.id,
-      roomName: room.name,
-      date: date.toISOString(),
-      startTime: formattedStartTime,
-      endTime: formattedEndTime,
-      classId: selectedClass.id,
-      className: selectedClass.name,
-      userId: currentUser.id,
-      userName: currentUser.full_name || currentUser.name || ''
-    };
+    try {
+      // Préparation des dates avec une meilleure gestion d'erreurs
+      const formattedDate = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
+      const formattedStartTime = combineDateAndTime(formattedDate, startTime);
+      const formattedEndTime = combineDateAndTime(formattedDate, endTime);
+      
+      console.log("Données de réservation formatées:", {
+        startTime: formattedStartTime,
+        endTime: formattedEndTime
+      });
+      
+      const requestData = {
+        type: 'room' as const,
+        roomId: room.id,
+        roomName: room.name,
+        date: date.toISOString(),
+        startTime: formattedStartTime,
+        endTime: formattedEndTime,
+        classId: selectedClass.id,
+        className: selectedClass.name,
+        userId: currentUser.id,
+        userName: currentUser.full_name || currentUser.name || ''
+      };
 
-    console.log("Données de réservation:", requestData);
+      console.log("Données de réservation:", requestData);
 
-    navigate('/request/new', {
-      state: requestData,
-    });
+      navigate('/request/new', {
+        state: requestData,
+      });
+    } catch (error) {
+      console.error("Erreur lors de la préparation de la réservation:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de la préparation de la réservation.',
+      });
+    }
   };
 
   // Get room icon by type
