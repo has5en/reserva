@@ -93,11 +93,14 @@ export const isDateInPast = (dateString: string): boolean => {
  * Combines a date string and a time string into a complete ISO date time string
  */
 export const combineDateAndTime = (dateStr: string, timeStr: string): string => {
-  // Create a new date object from the date string
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return '';
-  
   try {
+    // Create a new date object from the date string
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      console.error("Invalid date:", dateStr);
+      return new Date().toISOString(); // Fallback to current time
+    }
+    
     // If time contains colon, assume it's in HH:MM format
     if (timeStr.includes(':')) {
       const [hours, minutes] = timeStr.split(':').map(Number);
@@ -109,9 +112,11 @@ export const combineDateAndTime = (dateStr: string, timeStr: string): string => 
       }
     }
     
-    return dateStr; // Return original date if time format is invalid
+    // If we get here, either time format was invalid or hours/minutes were invalid
+    console.warn("Invalid time format or values:", timeStr);
+    return date.toISOString(); // Return just the date with default time
   } catch (error) {
     console.error("Error combining date and time:", error);
-    return dateStr; // Return original date in case of error
+    return new Date().toISOString(); // Return current time as fallback
   }
 };

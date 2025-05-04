@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Request, RequestStatus } from '@/data/models';
 import { toast } from '@/components/ui/use-toast';
@@ -179,12 +178,22 @@ export const addRoomRequest = async (requestData: Omit<Request, 'id' | 'createdA
   
   try {
     // Ensure proper date formatting for the database
-    let formattedDate = requestData.date;
-    if (requestData.date) {
-      // Ensure date is in YYYY-MM-DD format
-      formattedDate = new Date(requestData.date).toISOString().split('T')[0];
-    } else {
-      formattedDate = new Date().toISOString().split('T')[0];
+    let formattedDate = requestData.date || '';
+    
+    // Make sure we have a valid formatted date
+    try {
+      if (typeof formattedDate === 'string') {
+        if (formattedDate.includes('T')) {
+          // If it's an ISO date string, extract just the date part
+          formattedDate = formattedDate.split('T')[0];
+        }
+      } else {
+        // If it's a Date object or something else, try to convert to ISO and extract date
+        formattedDate = new Date(formattedDate).toISOString().split('T')[0];
+      }
+    } catch (e) {
+      console.error('Error formatting date:', e);
+      formattedDate = new Date().toISOString().split('T')[0]; // Fallback to today
     }
     
     const dbData = {

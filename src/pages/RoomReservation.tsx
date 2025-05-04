@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,7 +18,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import RoomTypeSelector from '@/components/RoomTypeSelector';
-import { combineDateAndTime } from '@/services/utils/dateUtils';
+import { combineDateAndTime, formatDate } from '@/services';
 import { createRequest } from '@/services/requests/requestService';
 
 const RoomReservation = () => {
@@ -104,7 +105,7 @@ const RoomReservation = () => {
     }
   };
 
-  const handleRoomSelection = (room: Room) => {
+  const handleRoomSelection = async (room: Room) => {
     if (!date || !startTime || !endTime || !selectedClass || !currentUser) {
       toast({
         variant: 'destructive',
@@ -125,30 +126,43 @@ const RoomReservation = () => {
         endTime: formattedEndTime
       });
       
+      // Créer directement la demande au lieu de naviguer vers une page
       const requestData = {
         type: 'room' as const,
+        status: 'pending' as const,
         roomId: room.id,
         roomName: room.name,
-        date: date.toISOString(),
+        date: formattedDate,
         startTime: formattedStartTime,
         endTime: formattedEndTime,
         classId: selectedClass.id,
         className: selectedClass.name,
         userId: currentUser.id,
-        userName: currentUser.full_name || currentUser.name || ''
+        userName: currentUser.full_name || currentUser.name || '',
+        notes: ''
       };
 
       console.log("Données de réservation:", requestData);
-
-      navigate('/request/new', {
-        state: requestData,
-      });
+      
+      // Création directe de la demande
+      const result = await createRequest(requestData);
+      
+      if (result) {
+        toast({
+          title: "Réservation enregistrée",
+          description: `La demande de réservation pour la salle ${room.name} a été enregistrée avec succès.`,
+        });
+        // Naviguer vers les détails de la demande créée
+        navigate(`/request/${result.id}`);
+      } else {
+        throw new Error("Erreur lors de la création de la demande");
+      }
     } catch (error) {
-      console.error("Erreur lors de la préparation de la réservation:", error);
+      console.error("Erreur lors de la création de la réservation:", error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
-        description: 'Une erreur est survenue lors de la préparation de la réservation.',
+        description: 'Une erreur est survenue lors de la création de la réservation.',
       });
     }
   };
