@@ -2,16 +2,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
-import { getRequestsByStatus, formatDate } from '@/services/dataService';
+import { getRequestsByStatus } from '@/services/requests/requestService';
 import { Request } from '@/data/models';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, Package, Eye } from 'lucide-react';
+import { Building2, Package, Eye, Printer } from 'lucide-react';
+import { formatDate } from '@/services/utils/dateUtils';
 
 const SupervisorDashboard = () => {
   const navigate = useNavigate();
@@ -40,12 +40,52 @@ const SupervisorDashboard = () => {
       request.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       request.className.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (request.roomName && request.roomName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (request.equipmentName && request.equipmentName.toLowerCase().includes(searchTerm.toLowerCase()));
+      (request.equipmentName && request.equipmentName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (request.documentName && request.documentName.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesType = filterType === 'all' || request.type === filterType;
     
     return matchesSearch && matchesType;
   });
+
+  const getRequestIcon = (type: string) => {
+    switch (type) {
+      case 'room':
+        return <Building2 className="h-12 w-12 text-primary mb-2" />;
+      case 'equipment':
+        return <Package className="h-12 w-12 text-primary mb-2" />;
+      case 'printing':
+        return <Printer className="h-12 w-12 text-primary mb-2" />;
+      default:
+        return null;
+    }
+  };
+
+  const getRequestTypeLabel = (type: string) => {
+    switch (type) {
+      case 'room':
+        return 'Réservation de salle';
+      case 'equipment':
+        return 'Demande de matériel';
+      case 'printing':
+        return 'Demande d\'impression';
+      default:
+        return type;
+    }
+  };
+
+  const getRequestTitle = (request: Request) => {
+    switch (request.type) {
+      case 'room':
+        return `Salle ${request.roomName}`;
+      case 'equipment':
+        return `${request.equipmentQuantity}x ${request.equipmentName}`;
+      case 'printing':
+        return `Impression: ${request.documentName}`;
+      default:
+        return 'Demande';
+    }
+  };
 
   return (
     <Layout title="Approbation finale des demandes">
@@ -78,6 +118,7 @@ const SupervisorDashboard = () => {
                     <SelectItem value="all">Tous les types</SelectItem>
                     <SelectItem value="room">Réservations de salle</SelectItem>
                     <SelectItem value="equipment">Demandes de matériel</SelectItem>
+                    <SelectItem value="printing">Demandes d'impression</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -96,23 +137,16 @@ const SupervisorDashboard = () => {
                     <CardContent className="p-0">
                       <div className="flex flex-col md:flex-row">
                         <div className="bg-accent p-6 md:w-64 flex flex-col justify-center items-center">
-                          {request.type === 'room' ? (
-                            <Building2 className="h-12 w-12 text-primary mb-2" />
-                          ) : (
-                            <Package className="h-12 w-12 text-primary mb-2" />
-                          )}
+                          {getRequestIcon(request.type)}
                           <h3 className="font-medium">
-                            {request.type === 'room' ? 'Réservation de salle' : 'Demande de matériel'}
+                            {getRequestTypeLabel(request.type)}
                           </h3>
                         </div>
                         <div className="p-6 flex-1">
                           <div className="flex justify-between items-start mb-4">
                             <div>
                               <h3 className="text-lg font-semibold mb-1">
-                                {request.type === 'room' 
-                                  ? `Salle ${request.roomName}`
-                                  : `${request.equipmentQuantity}x ${request.equipmentName}`
-                                }
+                                {getRequestTitle(request)}
                               </h3>
                               <div className="space-y-1">
                                 <p className="text-sm">
@@ -123,7 +157,7 @@ const SupervisorDashboard = () => {
                                 </p>
                                 <p className="text-sm">
                                   <span className="font-medium">Date:</span> {formatDate(request.date)}
-                                  {request.startTime && request.endTime && ` (${request.startTime} - ${request.endTime})`}
+                                  {request.startTime && request.endTime && ` (${request.startTime.substring(11, 16)} - ${request.endTime.substring(11, 16)})`}
                                 </p>
                               </div>
                             </div>

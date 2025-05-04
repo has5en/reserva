@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -6,11 +7,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { getRequest, updateRequestStatus } from '@/services/dataService';
+import { getRequestById, updateRequestStatus } from '@/services/requests/requestService';
 import { Request, RequestStatus } from '@/data/models';
 import { toast } from '@/components/ui/use-toast';
 import { ArrowLeft, Check, X, RefreshCw, FileCheck } from 'lucide-react';
-import { formatDate, formatDateTime } from '@/services/dataService';
+import { formatDate } from '@/services/utils/dateUtils';
+
+const formatDateTime = (dateString: string): string => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
 
 const RequestDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,7 +47,7 @@ const RequestDetails = () => {
   const fetchRequest = async (requestId: string) => {
     try {
       setLoading(true);
-      const data = await getRequest(requestId);
+      const data = await getRequestById(requestId);
       if (data) {
         setRequest(data);
       } else {
@@ -260,6 +273,23 @@ const RequestDetails = () => {
                     <div>
                       <Label className="text-sm font-medium">Quantité</Label>
                       <p className="mt-1">{request.equipmentQuantity || 1}</p>
+                    </div>
+                  </>
+                )}
+
+                {request.type === 'printing' && (
+                  <>
+                    <div>
+                      <Label className="text-sm font-medium">Document</Label>
+                      <p className="mt-1">{request.documentName}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Détails d'impression</Label>
+                      <p className="mt-1">{request.pageCount} pages × {request.copies} copies</p>
+                      <p className="mt-1">
+                        {request.colorPrint ? 'Couleur' : 'Noir et blanc'}, 
+                        {request.doubleSided ? ' recto-verso' : ' recto simple'}
+                      </p>
                     </div>
                   </>
                 )}

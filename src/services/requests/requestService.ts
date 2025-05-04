@@ -504,7 +504,29 @@ function transformEquipmentRequestData(data: any): Request {
     date: data.date,
     notes: data.notes,
     signature: data.signature,
-    requires_commander_approval: false
+    requires_commander_approval: false,
+    
+    // Ajout des informations d'approbation
+    adminApproval: data.admin_approval_user_id ? {
+      userId: data.admin_approval_user_id,
+      userName: data.admin_approval_user_name,
+      timestamp: data.admin_approval_timestamp,
+      notes: data.admin_approval_notes
+    } : undefined,
+    
+    supervisorApproval: data.supervisor_approval_user_id ? {
+      userId: data.supervisor_approval_user_id,
+      userName: data.supervisor_approval_user_name,
+      timestamp: data.supervisor_approval_timestamp,
+      notes: data.supervisor_approval_notes
+    } : undefined,
+    
+    returnInfo: data.return_user_id ? {
+      userId: data.return_user_id,
+      userName: data.return_user_name,
+      timestamp: data.return_timestamp,
+      notes: data.return_notes
+    } : undefined
   };
 }
 
@@ -529,7 +551,22 @@ function transformRoomRequestData(data: any): Request {
     endTime: data.end_time,
     date: data.date,
     notes: data.notes,
-    requires_commander_approval: data.requires_commander_approval
+    requires_commander_approval: data.requires_commander_approval,
+    
+    // Ajout des informations d'approbation
+    adminApproval: data.admin_approval_user_id ? {
+      userId: data.admin_approval_user_id,
+      userName: data.admin_approval_user_name,
+      timestamp: data.admin_approval_timestamp,
+      notes: data.admin_approval_notes
+    } : undefined,
+    
+    supervisorApproval: data.supervisor_approval_user_id ? {
+      userId: data.supervisor_approval_user_id,
+      userName: data.supervisor_approval_user_name,
+      timestamp: data.supervisor_approval_timestamp,
+      notes: data.supervisor_approval_notes
+    } : undefined
   };
 }
 
@@ -556,7 +593,22 @@ function transformPrintingRequestData(data: any): Request {
     doubleSided: data.double_sided,
     copies: data.copies,
     pdfFileName: data.pdf_file_name,
-    signature: data.signature
+    signature: data.signature,
+    
+    // Ajout des informations d'approbation
+    adminApproval: data.admin_approval_user_id ? {
+      userId: data.admin_approval_user_id,
+      userName: data.admin_approval_user_name,
+      timestamp: data.admin_approval_timestamp,
+      notes: data.admin_approval_notes
+    } : undefined,
+    
+    supervisorApproval: data.supervisor_approval_user_id ? {
+      userId: data.supervisor_approval_user_id,
+      userName: data.supervisor_approval_user_name,
+      timestamp: data.supervisor_approval_timestamp,
+      notes: data.supervisor_approval_notes
+    } : undefined
   };
 }
 

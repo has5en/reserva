@@ -101,6 +101,10 @@ export type Database = {
       }
       equipment_requests: {
         Row: {
+          admin_approval_notes: string | null
+          admin_approval_timestamp: string | null
+          admin_approval_user_id: string | null
+          admin_approval_user_name: string | null
           class_id: string | null
           class_name: string
           created_at: string
@@ -110,13 +114,25 @@ export type Database = {
           equipment_quantity: number
           id: string
           notes: string | null
+          return_notes: string | null
+          return_timestamp: string | null
+          return_user_id: string | null
+          return_user_name: string | null
           signature: string | null
           status: string
+          supervisor_approval_notes: string | null
+          supervisor_approval_timestamp: string | null
+          supervisor_approval_user_id: string | null
+          supervisor_approval_user_name: string | null
           updated_at: string
           user_id: string
           user_name: string
         }
         Insert: {
+          admin_approval_notes?: string | null
+          admin_approval_timestamp?: string | null
+          admin_approval_user_id?: string | null
+          admin_approval_user_name?: string | null
           class_id?: string | null
           class_name: string
           created_at?: string
@@ -126,13 +142,25 @@ export type Database = {
           equipment_quantity?: number
           id?: string
           notes?: string | null
+          return_notes?: string | null
+          return_timestamp?: string | null
+          return_user_id?: string | null
+          return_user_name?: string | null
           signature?: string | null
           status?: string
+          supervisor_approval_notes?: string | null
+          supervisor_approval_timestamp?: string | null
+          supervisor_approval_user_id?: string | null
+          supervisor_approval_user_name?: string | null
           updated_at?: string
           user_id: string
           user_name: string
         }
         Update: {
+          admin_approval_notes?: string | null
+          admin_approval_timestamp?: string | null
+          admin_approval_user_id?: string | null
+          admin_approval_user_name?: string | null
           class_id?: string | null
           class_name?: string
           created_at?: string
@@ -142,8 +170,16 @@ export type Database = {
           equipment_quantity?: number
           id?: string
           notes?: string | null
+          return_notes?: string | null
+          return_timestamp?: string | null
+          return_user_id?: string | null
+          return_user_name?: string | null
           signature?: string | null
           status?: string
+          supervisor_approval_notes?: string | null
+          supervisor_approval_timestamp?: string | null
+          supervisor_approval_user_id?: string | null
+          supervisor_approval_user_name?: string | null
           updated_at?: string
           user_id?: string
           user_name?: string
@@ -167,6 +203,10 @@ export type Database = {
       }
       printing_requests: {
         Row: {
+          admin_approval_notes: string | null
+          admin_approval_timestamp: string | null
+          admin_approval_user_id: string | null
+          admin_approval_user_name: string | null
           class_id: string | null
           class_name: string
           color_print: boolean | null
@@ -181,11 +221,19 @@ export type Database = {
           pdf_file_name: string | null
           signature: string | null
           status: string
+          supervisor_approval_notes: string | null
+          supervisor_approval_timestamp: string | null
+          supervisor_approval_user_id: string | null
+          supervisor_approval_user_name: string | null
           updated_at: string
           user_id: string
           user_name: string
         }
         Insert: {
+          admin_approval_notes?: string | null
+          admin_approval_timestamp?: string | null
+          admin_approval_user_id?: string | null
+          admin_approval_user_name?: string | null
           class_id?: string | null
           class_name: string
           color_print?: boolean | null
@@ -200,11 +248,19 @@ export type Database = {
           pdf_file_name?: string | null
           signature?: string | null
           status?: string
+          supervisor_approval_notes?: string | null
+          supervisor_approval_timestamp?: string | null
+          supervisor_approval_user_id?: string | null
+          supervisor_approval_user_name?: string | null
           updated_at?: string
           user_id: string
           user_name: string
         }
         Update: {
+          admin_approval_notes?: string | null
+          admin_approval_timestamp?: string | null
+          admin_approval_user_id?: string | null
+          admin_approval_user_name?: string | null
           class_id?: string | null
           class_name?: string
           color_print?: boolean | null
@@ -219,6 +275,10 @@ export type Database = {
           pdf_file_name?: string | null
           signature?: string | null
           status?: string
+          supervisor_approval_notes?: string | null
+          supervisor_approval_timestamp?: string | null
+          supervisor_approval_user_id?: string | null
+          supervisor_approval_user_name?: string | null
           updated_at?: string
           user_id?: string
           user_name?: string
@@ -343,6 +403,10 @@ export type Database = {
       }
       room_requests: {
         Row: {
+          admin_approval_notes: string | null
+          admin_approval_timestamp: string | null
+          admin_approval_user_id: string | null
+          admin_approval_user_name: string | null
           class_id: string | null
           class_name: string
           created_at: string
@@ -356,11 +420,19 @@ export type Database = {
           room_name: string
           start_time: string
           status: string
+          supervisor_approval_notes: string | null
+          supervisor_approval_timestamp: string | null
+          supervisor_approval_user_id: string | null
+          supervisor_approval_user_name: string | null
           updated_at: string
           user_id: string
           user_name: string
         }
         Insert: {
+          admin_approval_notes?: string | null
+          admin_approval_timestamp?: string | null
+          admin_approval_user_id?: string | null
+          admin_approval_user_name?: string | null
           class_id?: string | null
           class_name: string
           created_at?: string
@@ -374,11 +446,19 @@ export type Database = {
           room_name: string
           start_time: string
           status?: string
+          supervisor_approval_notes?: string | null
+          supervisor_approval_timestamp?: string | null
+          supervisor_approval_user_id?: string | null
+          supervisor_approval_user_name?: string | null
           updated_at?: string
           user_id: string
           user_name: string
         }
         Update: {
+          admin_approval_notes?: string | null
+          admin_approval_timestamp?: string | null
+          admin_approval_user_id?: string | null
+          admin_approval_user_name?: string | null
           class_id?: string | null
           class_name?: string
           created_at?: string
@@ -392,6 +472,10 @@ export type Database = {
           room_name?: string
           start_time?: string
           status?: string
+          supervisor_approval_notes?: string | null
+          supervisor_approval_timestamp?: string | null
+          supervisor_approval_user_id?: string | null
+          supervisor_approval_user_name?: string | null
           updated_at?: string
           user_id?: string
           user_name?: string
@@ -494,6 +578,17 @@ export type Database = {
     Functions: {
       return_equipment: {
         Args: { equipment_id: string; quantity: number }
+        Returns: undefined
+      }
+      update_request_status: {
+        Args: {
+          request_id: string
+          request_type: string
+          new_status: string
+          approver_id: string
+          approver_name: string
+          approval_notes?: string
+        }
         Returns: undefined
       }
     }

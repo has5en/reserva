@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Class } from '@/data/models';
 import { getClasses } from '@/services/classes/classService';
 import { createRequest } from '@/services/requests/requestService';
-import { Printer, Copy, FileText, Files, Palette, Upload, File, FileUp } from 'lucide-react';
+import { FileText, Copy, Files, Palette, Upload, File, FileUp } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const PrintingRequest = () => {
