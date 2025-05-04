@@ -88,3 +88,20 @@ export const isDateInPast = (dateString: string): boolean => {
   // Check if date is before today
   return date < today;
 };
+
+/**
+ * Combines a date string and a time string into a complete ISO date time string
+ */
+export const combineDateAndTime = (dateStr: string, timeStr: string): string => {
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+  
+  // If time contains colon, assume it's in HH:MM format
+  if (timeStr.includes(':')) {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    date.setHours(hours, minutes, 0, 0);
+    return date.toISOString();
+  }
+  
+  return date.toISOString();
+};

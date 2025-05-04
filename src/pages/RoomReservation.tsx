@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +18,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import RoomTypeSelector from '@/components/RoomTypeSelector';
+import { combineDateAndTime } from '@/services/utils/dateUtils';
 
 const RoomReservation = () => {
   const navigate = useNavigate();
@@ -112,14 +114,17 @@ const RoomReservation = () => {
       return;
     }
 
-    // Utilisez l'objet d'état complet pour une meilleure traçabilité
+    // Préparation des données pour la demande de réservation
+    const formattedStartTime = combineDateAndTime(date.toISOString(), startTime);
+    const formattedEndTime = combineDateAndTime(date.toISOString(), endTime);
+    
     const requestData = {
       type: 'room' as const,
       roomId: room.id,
       roomName: room.name,
       date: date.toISOString(),
-      startTime: startTime,
-      endTime: endTime,
+      startTime: formattedStartTime,
+      endTime: formattedEndTime,
       classId: selectedClass.id,
       className: selectedClass.name,
       userId: currentUser.id,

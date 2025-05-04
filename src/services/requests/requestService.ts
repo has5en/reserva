@@ -102,6 +102,12 @@ export const getRequestById = async (id: string): Promise<Request | null> => {
   try {
     console.log(`Fetching request with ID: ${id}`);
     
+    // Special case for "new" ID - this is for new request creation
+    if (id === 'new') {
+      console.log('Creating a new empty request template');
+      return null;
+    }
+    
     // Try to find the request in each table
     const [equipmentResult, roomResult, printingResult] = await Promise.all([
       supabase.from('equipment_requests').select('*').eq('id', id).maybeSingle(),
@@ -486,7 +492,6 @@ export const updateRequest = async (id: string, updates: Partial<Request>): Prom
 };
 
 // Helper functions to transform data from the database tables to our Request interface
-
 function transformEquipmentRequestData(data: any): Request {
   return {
     id: data.id,
