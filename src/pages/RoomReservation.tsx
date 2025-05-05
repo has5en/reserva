@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,7 +17,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import RoomTypeSelector from '@/components/RoomTypeSelector';
-import { combineDateAndTime, formatDate } from '@/services';
+import { combineDateAndTime, formatDate, ensureUUID } from '@/services';
 import { createRequest } from '@/services/requests/requestService';
 
 const RoomReservation = () => {
@@ -36,6 +35,7 @@ const RoomReservation = () => {
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [currentTab, setCurrentTab] = useState<RoomType | 'all'>('all');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const loadClasses = async () => {
@@ -115,55 +115,77 @@ const RoomReservation = () => {
       return;
     }
 
+    // Prevent double submissions
+    if (isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
-      // Préparation des dates avec une meilleure gestion d'erreurs
+      console.log("Current user:", currentUser);
+      console.log("Selected class:", selectedClass);
+      console.log("Selected room:", room);
+
+      // Format the date properly
       const formattedDate = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
+
+      // Prepare start and end times
       const formattedStartTime = combineDateAndTime(formattedDate, startTime);
       const formattedEndTime = combineDateAndTime(formattedDate, endTime);
       
-      console.log("Données de réservation formatées:", {
-        startTime: formattedStartTime,
-        endTime: formattedEndTime
-      });
+      console.log("Formatted date:", formattedDate);
+      console.log("Formatted start time:", formattedStartTime);
+      console.log("Formatted end time:", formattedEndTime);
       
-      // Créer directement la demande au lieu de naviguer vers une page
+      // Create request data with proper validation
       const requestData = {
         type: 'room' as const,
         status: 'pending' as const,
         roomId: room.id,
-        roomName: room.name,
+        roomName: room.name || 'Salle sans nom',
         date: formattedDate,
         startTime: formattedStartTime,
         endTime: formattedEndTime,
         classId: selectedClass.id,
-        className: selectedClass.name,
+        className: selectedClass.name || 'Classe sans nom',
         userId: currentUser.id,
-        userName: currentUser.full_name || currentUser.name || '',
+        userName: currentUser.full_name || currentUser.name || 'Utilisateur',
         notes: ''
       };
 
-      console.log("Données de réservation:", requestData);
+      console.log("Request data being submitted:", requestData);
       
-      // Création directe de la demande
+      // Create the request
       const result = await createRequest(requestData);
       
       if (result) {
+        console.log("Request created successfully:", result);
         toast({
+          variant: 'default',
           title: "Réservation enregistrée",
           description: `La demande de réservation pour la salle ${room.name} a été enregistrée avec succès.`,
         });
-        // Naviguer vers les détails de la demande créée
-        navigate(`/request/${result.id}`);
+        
+        // Only navigate if we have a valid ID
+        if (result.id) {
+          navigate(`/request/${result.id}`);
+        } else {
+          console.error("Request created but no ID returned");
+          throw new Error("Erreur: Demande créée mais sans identifiant");
+        }
       } else {
-        throw new Error("Erreur lors de la création de la demande");
+        throw new Error("Erreur lors de la création de la demande: Aucun résultat retourné");
       }
-    } catch (error) {
-      console.error("Erreur lors de la création de la réservation:", error);
+    } catch (error: any) {
+      console.error("Error creating reservation:", error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
-        description: 'Une erreur est survenue lors de la création de la réservation.',
+        description: `Une erreur est survenue lors de la création de la réservation: ${error.message || "Erreur inconnue"}`,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -329,7 +351,7 @@ const RoomReservation = () => {
             {showValidationErrors && (!date || !startTime || !endTime) && (
               <p className="text-red-500">Veuillez sélectionner une date et une heure de début et de fin.</p>
             )}
-            <Button onClick={handleSearchRooms} disabled={loading}>
+            <Button onClick={handleSearchRooms} disabled={loading || classesLoading}>
               {loading ? 'Recherche en cours...' : 'Rechercher'}
             </Button>
           </CardContent>
@@ -341,111 +363,109 @@ const RoomReservation = () => {
             {loading ? (
               <p>Chargement des salles disponibles...</p>
             ) : availableRooms.length > 0 ? (
-              <>
-                <Tabs value={currentTab} onValueChange={(value) => setCurrentTab(value as RoomType | 'all')} className="mb-6">
-                  <TabsList className="w-full flex flex-wrap">
-                    <TabsTrigger 
-                      value="all" 
-                      className={currentTab === 'all' ? getRoomTypeStyle('all') : ''}
-                    >
-                      <Building className="h-4 w-4 mr-2" />
-                      Toutes
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="classroom" 
-                      className={currentTab === 'classroom' ? getRoomTypeStyle('classroom') : ''}
-                    >
-                      <BookOpen className="h-4 w-4 mr-2" />
-                      Classe
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="training_room" 
-                      className={currentTab === 'training_room' ? getRoomTypeStyle('training_room') : ''}
-                    >
-                      <Presentation className="h-4 w-4 mr-2" />
-                      Formation
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="weapons_room" 
-                      className={currentTab === 'weapons_room' ? getRoomTypeStyle('weapons_room') : ''}
-                    >
-                      <Swords className="h-4 w-4 mr-2" />
-                      Armes
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="tactical_room" 
-                      className={currentTab === 'tactical_room' ? getRoomTypeStyle('tactical_room') : ''}
-                    >
-                      <MapPin className="h-4 w-4 mr-2" />
-                      Tactique
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="computer_lab" 
-                      className={currentTab === 'computer_lab' ? getRoomTypeStyle('computer_lab') : ''}
-                    >
-                      <Computer className="h-4 w-4 mr-2" />
-                      Informatique
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="science_lab" 
-                      className={currentTab === 'science_lab' ? getRoomTypeStyle('science_lab') : ''}
-                    >
-                      <Beaker className="h-4 w-4 mr-2" />
-                      Laboratoire
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="meeting_room" 
-                      className={currentTab === 'meeting_room' ? getRoomTypeStyle('meeting_room') : ''}
-                    >
-                      <Users className="h-4 w-4 mr-2" />
-                      Réunion
-                    </TabsTrigger>
-                  </TabsList>
+              <Tabs value={currentTab} onValueChange={(value) => setCurrentTab(value as RoomType | 'all')} className="mb-6">
+                <TabsList className="w-full flex flex-wrap">
+                  <TabsTrigger 
+                    value="all" 
+                    className={currentTab === 'all' ? getRoomTypeStyle('all') : ''}
+                  >
+                    <Building className="h-4 w-4 mr-2" />
+                    Toutes
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="classroom" 
+                    className={currentTab === 'classroom' ? getRoomTypeStyle('classroom') : ''}
+                  >
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Classe
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="training_room" 
+                    className={currentTab === 'training_room' ? getRoomTypeStyle('training_room') : ''}
+                  >
+                    <Presentation className="h-4 w-4 mr-2" />
+                    Formation
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="weapons_room" 
+                    className={currentTab === 'weapons_room' ? getRoomTypeStyle('weapons_room') : ''}
+                  >
+                    <Swords className="h-4 w-4 mr-2" />
+                    Armes
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="tactical_room" 
+                    className={currentTab === 'tactical_room' ? getRoomTypeStyle('tactical_room') : ''}
+                  >
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Tactique
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="computer_lab" 
+                    className={currentTab === 'computer_lab' ? getRoomTypeStyle('computer_lab') : ''}
+                  >
+                    <Computer className="h-4 w-4 mr-2" />
+                    Informatique
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="science_lab" 
+                    className={currentTab === 'science_lab' ? getRoomTypeStyle('science_lab') : ''}
+                  >
+                    <Beaker className="h-4 w-4 mr-2" />
+                    Laboratoire
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="meeting_room" 
+                    className={currentTab === 'meeting_room' ? getRoomTypeStyle('meeting_room') : ''}
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Réunion
+                  </TabsTrigger>
+                </TabsList>
 
-                  <TabsContent value="all" className="mt-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {filteredRooms.map((room) => (
-                        <Card key={room.id} className="cursor-pointer hover:shadow-md transition-shadow duration-200" onClick={() => handleRoomSelection(room)}>
-                          <CardContent className="flex flex-col space-y-2 pt-6">
-                            <div className="flex items-center space-x-2">
-                              {getRoomIcon(room.type)}
-                              <h3 className="text-sm font-semibold">{room.name}</h3>
-                            </div>
-                            <p className="text-xs text-gray-500">Type: {translateRoomType(room.type)}</p>
-                            <p className="text-xs text-gray-500">Capacité: {room.capacity} personnes</p>
-                            <p className="text-xs text-gray-500">Étage: {room.floor || 'Non spécifié'}</p>
-                            <p className="text-xs text-gray-500">Bâtiment: {room.building || 'Non spécifié'}</p>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+                <TabsContent value="all" className="mt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredRooms.map((room) => (
+                      <Card key={room.id} className="cursor-pointer hover:shadow-md transition-shadow duration-200" onClick={() => handleRoomSelection(room)}>
+                        <CardContent className="flex flex-col space-y-2 pt-6">
+                          <div className="flex items-center space-x-2">
+                            {getRoomIcon(room.type)}
+                            <h3 className="text-sm font-semibold">{room.name}</h3>
+                          </div>
+                          <p className="text-xs text-gray-500">Type: {translateRoomType(room.type)}</p>
+                          <p className="text-xs text-gray-500">Capacité: {room.capacity} personnes</p>
+                          <p className="text-xs text-gray-500">Étage: {room.floor || 'Non spécifié'}</p>
+                          <p className="text-xs text-gray-500">Bâtiment: {room.building || 'Non spécifié'}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                {(['classroom', 'training_room', 'weapons_room', 'tactical_room', 'computer_lab', 'science_lab', 'meeting_room'] as RoomType[]).map((type) => (
+                  <TabsContent key={type} value={type} className="mt-4">
+                    {filteredRooms.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredRooms.map((room) => (
+                          <Card key={room.id} className="cursor-pointer hover:shadow-md transition-shadow duration-200" onClick={() => handleRoomSelection(room)}>
+                            <CardContent className="flex flex-col space-y-2 pt-6">
+                              <div className="flex items-center space-x-2">
+                                {getRoomIcon(room.type)}
+                                <h3 className="text-sm font-semibold">{room.name}</h3>
+                              </div>
+                              <p className="text-xs text-gray-500">Capacité: {room.capacity} personnes</p>
+                              <p className="text-xs text-gray-500">Étage: {room.floor || 'Non spécifié'}</p>
+                              <p className="text-xs text-gray-500">Bâtiment: {room.building || 'Non spécifié'}</p>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <p>Aucune salle de type {translateRoomType(type)} disponible pour les critères sélectionnés.</p>
+                    )}
                   </TabsContent>
-
-                  {(['classroom', 'training_room', 'weapons_room', 'tactical_room', 'computer_lab', 'science_lab', 'meeting_room'] as RoomType[]).map((type) => (
-                    <TabsContent key={type} value={type} className="mt-4">
-                      {filteredRooms.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {filteredRooms.map((room) => (
-                            <Card key={room.id} className="cursor-pointer hover:shadow-md transition-shadow duration-200" onClick={() => handleRoomSelection(room)}>
-                              <CardContent className="flex flex-col space-y-2 pt-6">
-                                <div className="flex items-center space-x-2">
-                                  {getRoomIcon(room.type)}
-                                  <h3 className="text-sm font-semibold">{room.name}</h3>
-                                </div>
-                                <p className="text-xs text-gray-500">Capacité: {room.capacity} personnes</p>
-                                <p className="text-xs text-gray-500">Étage: {room.floor || 'Non spécifié'}</p>
-                                <p className="text-xs text-gray-500">Bâtiment: {room.building || 'Non spécifié'}</p>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      ) : (
-                        <p>Aucune salle de type {translateRoomType(type)} disponible pour les critères sélectionnés.</p>
-                      )}
-                    </TabsContent>
-                  ))}
-                </Tabs>
-              </>
+                ))}
+              </Tabs>
             ) : (
               <p>Aucune salle disponible pour les critères sélectionnés.</p>
             )}

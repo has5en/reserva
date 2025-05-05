@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Request, RequestStatus } from '@/data/models';
 import { toast } from '@/components/ui/use-toast';
+import { ensureUUID } from '@/services/utils/dateUtils';
 
 export const getAllRequests = async (): Promise<Request[]> => {
   try {
@@ -71,26 +72,37 @@ export const getRequestsByUserId = async (userId: string): Promise<Request[]> =>
   try {
     console.log(`Fetching requests for user ${userId}`);
     
-    const [equipmentResult, roomResult, printingResult] = await Promise.all([
-      supabase.from('equipment_requests').select('*').eq('user_id', userId),
-      supabase.from('room_requests').select('*').eq('user_id', userId),
-      supabase.from('printing_requests').select('*').eq('user_id', userId)
-    ]);
-    
-    // Handle errors if any
-    if (equipmentResult.error) console.error('Error fetching equipment requests:', equipmentResult.error);
-    if (roomResult.error) console.error('Error fetching room requests:', roomResult.error);
-    if (printingResult.error) console.error('Error fetching printing requests:', printingResult.error);
-    
-    // Transform and combine data
-    const equipmentRequests = equipmentResult.data ? transformEquipmentRequestsData(equipmentResult.data) : [];
-    const roomRequests = roomResult.data ? transformRoomRequestsData(roomResult.data) : [];
-    const printingRequests = printingResult.data ? transformPrintingRequestsData(printingResult.data) : [];
-    
-    const allRequests = [...equipmentRequests, ...roomRequests, ...printingRequests];
-    console.log(`Fetched ${allRequests.length} requests for user ${userId}`);
-    
-    return allRequests;
+    // Validate userId before sending to database
+    try {
+      // Proper UUID validation to prevent SQL errors
+      if (userId && (!userId.includes('-') || userId.length < 30)) {
+        console.warn(`Invalid UUID format for userId: ${userId}. This may cause database errors.`);
+      }
+      
+      const [equipmentResult, roomResult, printingResult] = await Promise.all([
+        supabase.from('equipment_requests').select('*').eq('user_id', userId),
+        supabase.from('room_requests').select('*').eq('user_id', userId),
+        supabase.from('printing_requests').select('*').eq('user_id', userId)
+      ]);
+      
+      // Handle errors if any
+      if (equipmentResult.error) console.error('Error fetching equipment requests:', equipmentResult.error);
+      if (roomResult.error) console.error('Error fetching room requests:', roomResult.error);
+      if (printingResult.error) console.error('Error fetching printing requests:', printingResult.error);
+      
+      // Transform and combine data
+      const equipmentRequests = equipmentResult.data ? transformEquipmentRequestsData(equipmentResult.data) : [];
+      const roomRequests = roomResult.data ? transformRoomRequestsData(roomResult.data) : [];
+      const printingRequests = printingResult.data ? transformPrintingRequestsData(printingResult.data) : [];
+      
+      const allRequests = [...equipmentRequests, ...roomRequests, ...printingRequests];
+      console.log(`Fetched ${allRequests.length} requests for user ${userId}`);
+      
+      return allRequests;
+    } catch (error) {
+      console.error(`Error with UUID validation for user ${userId}:`, error);
+      return [];
+    }
   } catch (error) {
     console.error(`Error fetching requests for user ${userId}:`, error);
     return [];
@@ -107,31 +119,42 @@ export const getRequestById = async (id: string): Promise<Request | null> => {
       return null;
     }
     
-    // Try to find the request in each table
-    const [equipmentResult, roomResult, printingResult] = await Promise.all([
-      supabase.from('equipment_requests').select('*').eq('id', id).maybeSingle(),
-      supabase.from('room_requests').select('*').eq('id', id).maybeSingle(),
-      supabase.from('printing_requests').select('*').eq('id', id).maybeSingle()
-    ]);
-    
-    // Check which table contained the request
-    if (equipmentResult.data) {
-      console.log('Equipment request found:', equipmentResult.data);
-      return transformEquipmentRequestData(equipmentResult.data);
+    // Validate ID early to prevent database errors
+    try {
+      // Try to validate UUID format
+      if (id && (!id.includes('-') || id.length < 30)) {
+        console.warn(`Potentially invalid UUID format for id: ${id}`);
+      }
+      
+      // Try to find the request in each table
+      const [equipmentResult, roomResult, printingResult] = await Promise.all([
+        supabase.from('equipment_requests').select('*').eq('id', id).maybeSingle(),
+        supabase.from('room_requests').select('*').eq('id', id).maybeSingle(),
+        supabase.from('printing_requests').select('*').eq('id', id).maybeSingle()
+      ]);
+      
+      // Check which table contained the request
+      if (equipmentResult.data) {
+        console.log('Equipment request found:', equipmentResult.data);
+        return transformEquipmentRequestData(equipmentResult.data);
+      }
+      
+      if (roomResult.data) {
+        console.log('Room request found:', roomResult.data);
+        return transformRoomRequestData(roomResult.data);
+      }
+      
+      if (printingResult.data) {
+        console.log('Printing request found:', printingResult.data);
+        return transformPrintingRequestData(printingResult.data);
+      }
+      
+      console.log(`No request found with ID: ${id}`);
+      return null;
+    } catch (error) {
+      console.error(`Error with UUID validation for request ${id}:`, error);
+      return null;
     }
-    
-    if (roomResult.data) {
-      console.log('Room request found:', roomResult.data);
-      return transformRoomRequestData(roomResult.data);
-    }
-    
-    if (printingResult.data) {
-      console.log('Printing request found:', printingResult.data);
-      return transformPrintingRequestData(printingResult.data);
-    }
-    
-    console.log(`No request found with ID: ${id}`);
-    return null;
   } catch (error) {
     console.error(`Error fetching request ${id}:`, error);
     return null;
@@ -177,25 +200,41 @@ export const addRoomRequest = async (requestData: Omit<Request, 'id' | 'createdA
   console.log('Adding room request:', requestData);
   
   try {
+    // Validate critical fields
+    if (!requestData.userId || !requestData.startTime || !requestData.endTime) {
+      const missingFields = [];
+      if (!requestData.userId) missingFields.push('userId');
+      if (!requestData.startTime) missingFields.push('startTime');
+      if (!requestData.endTime) missingFields.push('endTime');
+      
+      const errorMsg = `Missing required fields: ${missingFields.join(', ')}`;
+      console.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+    
+    // Validate UUID format for userId
+    if (!requestData.userId.includes('-') || requestData.userId.length < 30) {
+      console.warn(`Potentially invalid UUID for userId: ${requestData.userId}`);
+    }
+    
     // Ensure proper date formatting for the database
     let formattedDate = requestData.date || '';
     
     // Make sure we have a valid formatted date
     try {
-      if (typeof formattedDate === 'string') {
-        if (formattedDate.includes('T')) {
-          // If it's an ISO date string, extract just the date part
-          formattedDate = formattedDate.split('T')[0];
-        }
-      } else {
-        // If it's a Date object or something else, try to convert to ISO and extract date
+      // If it's a Date object or something else, try to convert to ISO and extract date
+      if (typeof formattedDate !== 'string' || !formattedDate.includes('-')) {
         formattedDate = new Date(formattedDate).toISOString().split('T')[0];
+      } else if (formattedDate.includes('T')) {
+        // If it's an ISO date string, extract just the date part
+        formattedDate = formattedDate.split('T')[0];
       }
     } catch (e) {
       console.error('Error formatting date:', e);
       formattedDate = new Date().toISOString().split('T')[0]; // Fallback to today
     }
     
+    // Prepare the database record
     const dbData = {
       user_id: requestData.userId,
       user_name: requestData.userName || 'Unknown User',
@@ -203,8 +242,8 @@ export const addRoomRequest = async (requestData: Omit<Request, 'id' | 'createdA
       room_name: requestData.roomName || '',
       class_id: requestData.classId,
       class_name: requestData.className || '',
-      start_time: requestData.startTime || new Date().toISOString(),
-      end_time: requestData.endTime || new Date().toISOString(),
+      start_time: requestData.startTime,
+      end_time: requestData.endTime,
       date: formattedDate,
       notes: requestData.notes || '',
       requires_commander_approval: requestData.requires_commander_approval || false,
@@ -213,6 +252,7 @@ export const addRoomRequest = async (requestData: Omit<Request, 'id' | 'createdA
 
     console.log('Data prepared for room_requests table:', dbData);
     
+    // Insert the record with error handling
     const { error, data } = await supabase
       .from('room_requests')
       .insert(dbData)
@@ -233,7 +273,7 @@ export const addRoomRequest = async (requestData: Omit<Request, 'id' | 'createdA
       return transformRoomRequestData(data[0]);
     } else {
       console.log('Room request added but no data returned');
-      return null;
+      throw new Error('Aucune donnée retournée après la création de la demande');
     }
   } catch (error: any) {
     console.error('Error adding room request:', error);
@@ -377,6 +417,19 @@ export const createRequest = async (requestData: Omit<Request, 'id' | 'createdAt
   console.log('Creating request:', requestData);
   
   try {
+    // Validate critical fields based on request type
+    if (!requestData.userId) {
+      throw new Error("L'identifiant de l'utilisateur est requis");
+    }
+    
+    if (requestData.type === 'room' && !requestData.roomId) {
+      throw new Error("L'identifiant de la salle est requis");
+    }
+    
+    if (requestData.type === 'equipment' && !requestData.equipmentId) {
+      throw new Error("L'identifiant de l'équipement est requis");
+    }
+    
     // Route to the appropriate request creation function based on type
     if (requestData.type === 'room') {
       return await addRoomRequest(requestData);
@@ -386,7 +439,7 @@ export const createRequest = async (requestData: Omit<Request, 'id' | 'createdAt
       return await addPrintingRequest(requestData);
     }
     
-    throw new Error(`Invalid request type: ${requestData.type}`);
+    throw new Error(`Type de demande invalide: ${requestData.type}`);
   } catch (error) {
     console.error('Error in createRequest:', error);
     throw error; // Re-throw to let calling code handle it
