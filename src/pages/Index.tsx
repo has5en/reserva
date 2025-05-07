@@ -1,23 +1,31 @@
+
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { Calendar } from '@/components/ui/calendar';
+
 const Index = () => {
   const {
     isAuthenticated
   } = useAuth();
   const navigate = useNavigate();
+  
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/dashboard');
     }
   }, [isAuthenticated, navigate]);
+  
   return <div className="min-h-screen flex flex-col">
       <header className="bg-primary text-white p-4">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            
+            <img 
+              src="/lovable-uploads/6a16ef00-89af-4197-a128-918fd7f4bc64.png" 
+              alt="Drapeau Tunisien" 
+              className="h-8 w-auto mr-2"
+            />
             <h1 className="text-2xl font-bold">Reserva</h1>
           </div>
           <Button variant="outline" onClick={() => navigate('/login')} className="border-white hover:bg-white text-slate-950">
@@ -28,6 +36,14 @@ const Index = () => {
 
       <main className="flex-1 container mx-auto p-8">
         <div className="max-w-4xl mx-auto text-center">
+          <div className="flex justify-center mb-8">
+            <img 
+              src="/lovable-uploads/e07bb06a-cd83-4b82-83c6-f09e7cd9588c.png" 
+              alt="Logo Militaire" 
+              className="h-32 w-auto"
+            />
+          </div>
+          
           <h2 className="text-4xl font-bold mb-6">Plateforme de Réservation Intelligente</h2>
           <p className="text-xl mb-8">
             Simplifiez la gestion des ressources pédagogiques avec notre solution centralisée.
@@ -61,12 +77,12 @@ const Index = () => {
             <div className="bg-white p-6 rounded-lg shadow-md">
               <div className="bg-accent rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Approbation Digitale</h3>
+              <h3 className="text-xl font-semibold mb-2">Demande d'Impression</h3>
               <p className="text-gray-600">
-                Workflow d'approbation numérique qui remplace les formulaires papier et assure une traçabilité complète.
+                Soumettez vos demandes d'impression et suivez leur traitement de manière entièrement numérique et transparente.
               </p>
             </div>
           </div>
@@ -84,4 +100,5 @@ const Index = () => {
       </footer>
     </div>;
 };
+
 export default Index;
