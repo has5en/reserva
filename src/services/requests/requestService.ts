@@ -72,17 +72,23 @@ export const getRequestsByUserId = async (userId: string): Promise<Request[]> =>
   try {
     console.log(`Fetching requests for user ${userId}`);
     
-    // Validate userId before sending to database
+    // Validate userId to prevent database errors
+    const validUserId = ensureUUID(userId);
+    if (!validUserId) {
+      console.error(`Invalid UUID format for userId: ${userId}. Cannot query database with this value.`);
+      toast({
+        variant: "destructive",
+        title: "Erreur de format",
+        description: "Format d'identifiant utilisateur invalide. Veuillez vous reconnecter."
+      });
+      return [];
+    }
+    
     try {
-      // Proper UUID validation to prevent SQL errors
-      if (userId && (!userId.includes('-') || userId.length < 30)) {
-        console.warn(`Invalid UUID format for userId: ${userId}. This may cause database errors.`);
-      }
-      
       const [equipmentResult, roomResult, printingResult] = await Promise.all([
-        supabase.from('equipment_requests').select('*').eq('user_id', userId),
-        supabase.from('room_requests').select('*').eq('user_id', userId),
-        supabase.from('printing_requests').select('*').eq('user_id', userId)
+        supabase.from('equipment_requests').select('*').eq('user_id', validUserId),
+        supabase.from('room_requests').select('*').eq('user_id', validUserId),
+        supabase.from('printing_requests').select('*').eq('user_id', validUserId)
       ]);
       
       // Handle errors if any
@@ -119,18 +125,19 @@ export const getRequestById = async (id: string): Promise<Request | null> => {
       return null;
     }
     
-    // Validate ID early to prevent database errors
+    // Validate ID to prevent database errors
+    const validId = ensureUUID(id);
+    if (!validId) {
+      console.error(`Invalid UUID format for id: ${id}. Cannot query database with this value.`);
+      return null;
+    }
+    
     try {
-      // Try to validate UUID format
-      if (id && (!id.includes('-') || id.length < 30)) {
-        console.warn(`Potentially invalid UUID format for id: ${id}`);
-      }
-      
       // Try to find the request in each table
       const [equipmentResult, roomResult, printingResult] = await Promise.all([
-        supabase.from('equipment_requests').select('*').eq('id', id).maybeSingle(),
-        supabase.from('room_requests').select('*').eq('id', id).maybeSingle(),
-        supabase.from('printing_requests').select('*').eq('id', id).maybeSingle()
+        supabase.from('equipment_requests').select('*').eq('id', validId).maybeSingle(),
+        supabase.from('room_requests').select('*').eq('id', validId).maybeSingle(),
+        supabase.from('printing_requests').select('*').eq('id', validId).maybeSingle()
       ]);
       
       // Check which table contained the request
@@ -213,8 +220,11 @@ export const addRoomRequest = async (requestData: Omit<Request, 'id' | 'createdA
     }
     
     // Validate UUID format for userId
-    if (!requestData.userId.includes('-') || requestData.userId.length < 30) {
-      console.warn(`Potentially invalid UUID for userId: ${requestData.userId}`);
+    const validUserId = ensureUUID(requestData.userId);
+    if (!validUserId) {
+      const errorMsg = `Format d'identifiant utilisateur invalide: ${requestData.userId}`;
+      console.error(errorMsg);
+      throw new Error(errorMsg);
     }
     
     // Ensure proper date formatting for the database
@@ -236,11 +246,11 @@ export const addRoomRequest = async (requestData: Omit<Request, 'id' | 'createdA
     
     // Prepare the database record
     const dbData = {
-      user_id: requestData.userId,
+      user_id: validUserId,
       user_name: requestData.userName || 'Unknown User',
-      room_id: requestData.roomId,
+      room_id: ensureUUID(requestData.roomId) || null,
       room_name: requestData.roomName || '',
-      class_id: requestData.classId,
+      class_id: ensureUUID(requestData.classId) || null,
       class_name: requestData.className || '',
       start_time: requestData.startTime,
       end_time: requestData.endTime,
@@ -290,6 +300,14 @@ export const addEquipmentRequest = async (requestData: Omit<Request, 'id' | 'cre
   console.log('Adding equipment request:', requestData);
   
   try {
+    // Validate UUID format for userId
+    const validUserId = ensureUUID(requestData.userId);
+    if (!validUserId) {
+      const errorMsg = `Format d'identifiant utilisateur invalide: ${requestData.userId}`;
+      console.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+    
     // Ensure proper date formatting for the database
     let formattedDate = requestData.date;
     if (requestData.date) {
@@ -300,12 +318,12 @@ export const addEquipmentRequest = async (requestData: Omit<Request, 'id' | 'cre
     }
     
     const dbData = {
-      user_id: requestData.userId,
+      user_id: validUserId,
       user_name: requestData.userName || 'Unknown User',
-      equipment_id: requestData.equipmentId,
+      equipment_id: ensureUUID(requestData.equipmentId) || null,
       equipment_name: requestData.equipmentName || '',
       equipment_quantity: requestData.equipmentQuantity || 1,
-      class_id: requestData.classId,
+      class_id: ensureUUID(requestData.classId) || null,
       class_name: requestData.className || '',
       date: formattedDate,
       notes: requestData.notes || '',
@@ -352,6 +370,14 @@ export const addPrintingRequest = async (requestData: Omit<Request, 'id' | 'crea
   console.log('Adding printing request:', requestData);
   
   try {
+    // Validate UUID format for userId
+    const validUserId = ensureUUID(requestData.userId);
+    if (!validUserId) {
+      const errorMsg = `Format d'identifiant utilisateur invalide: ${requestData.userId}`;
+      console.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+    
     // Ensure proper date formatting for the database
     let formattedDate = requestData.date;
     if (requestData.date) {
@@ -362,7 +388,7 @@ export const addPrintingRequest = async (requestData: Omit<Request, 'id' | 'crea
     }
     
     const dbData = {
-      user_id: requestData.userId,
+      user_id: validUserId,
       user_name: requestData.userName || 'Unknown User',
       document_name: requestData.documentName || '',
       page_count: requestData.pageCount || 1,
@@ -370,7 +396,7 @@ export const addPrintingRequest = async (requestData: Omit<Request, 'id' | 'crea
       double_sided: requestData.doubleSided || false,
       copies: requestData.copies || 1,
       pdf_file_name: requestData.pdfFileName || '',
-      class_id: requestData.classId,
+      class_id: ensureUUID(requestData.classId) || null,
       class_name: requestData.className || '',
       date: formattedDate,
       notes: requestData.notes || '',
@@ -502,8 +528,15 @@ export const updateRequest = async (id: string, updates: Partial<Request>): Prom
   }
   
   try {
+    // Validate ID to prevent database errors
+    const validId = ensureUUID(id);
+    if (!validId) {
+      console.error(`Invalid UUID format for id: ${id}. Cannot update database with this value.`);
+      throw new Error("Format d'identifiant de demande invalide");
+    }
+    
     // First, find which table contains the request
-    const request = await getRequestById(id);
+    const request = await getRequestById(validId);
     
     if (!request) {
       throw new Error(`Request with id ${id} not found`);
@@ -514,6 +547,17 @@ export const updateRequest = async (id: string, updates: Partial<Request>): Prom
     for (const [key, value] of Object.entries(updates)) {
       // Handle status separately (already handled above)
       if (key === 'status') continue;
+      
+      // Handle UUIDs
+      if (key === 'userId' || key === 'roomId' || key === 'equipmentId' || key === 'classId') {
+        const validValue = ensureUUID(value as string);
+        if (validValue) {
+          // Convert camelCase to snake_case for database fields
+          const dbKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+          dbUpdates[dbKey] = validValue;
+        }
+        continue;
+      }
       
       // Convert camelCase to snake_case for database fields
       const dbKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
@@ -527,21 +571,21 @@ export const updateRequest = async (id: string, updates: Partial<Request>): Prom
       const result = await supabase
         .from('equipment_requests')
         .update(dbUpdates)
-        .eq('id', id);
+        .eq('id', validId);
       
       error = result.error;
     } else if (request.type === 'room') {
       const result = await supabase
         .from('room_requests')
         .update(dbUpdates)
-        .eq('id', id);
+        .eq('id', validId);
       
       error = result.error;
     } else if (request.type === 'printing') {
       const result = await supabase
         .from('printing_requests')
         .update(dbUpdates)
-        .eq('id', id);
+        .eq('id', validId);
       
       error = result.error;
     }

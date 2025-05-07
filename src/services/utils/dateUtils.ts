@@ -148,20 +148,29 @@ export const combineDateAndTime = (dateStr: string, timeStr: string): string => 
 };
 
 /**
- * Safely converts a value to a UUID-compliant string.
- * Will throw an error if the value cannot be converted to a valid UUID format.
+ * Safely converts a value to a UUID-compliant string or returns null if invalid.
+ * This version prevents database errors by handling non-UUID values gracefully.
  */
-export const ensureUUID = (value: string | number): string => {
-  // If it's a number or numeric string that isn't a UUID, throw an error
-  if (typeof value === 'number' || (!isNaN(Number(value)) && String(value).length < 10)) {
-    throw new Error(`Value "${value}" is not a valid UUID format`);
+export const ensureUUID = (value: string | number | undefined | null): string | null => {
+  if (value === undefined || value === null) {
+    console.warn("Null or undefined value provided to ensureUUID");
+    return null;
   }
+  
+  // If it's a simple number like 1, 2, 3 - this is not a valid UUID
+  if (typeof value === 'number' || (!isNaN(Number(value)) && String(value).length < 10)) {
+    console.warn(`Value "${value}" is not in UUID format, returning null`);
+    return null;
+  }
+  
+  const stringValue = String(value);
   
   // Simple UUID format check (not comprehensive but catches basic issues)
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (typeof value === 'string' && !uuidPattern.test(value) && value !== 'new') {
-    console.warn(`Potentially invalid UUID format: ${value}`);
+  if (!uuidPattern.test(stringValue) && stringValue !== 'new') {
+    console.warn(`Invalid UUID format: ${stringValue}, returning null`);
+    return null;
   }
   
-  return String(value);
+  return stringValue;
 };
