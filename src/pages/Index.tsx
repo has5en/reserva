@@ -22,11 +22,16 @@ const Index = () => {
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <img 
-              src="/lovable-uploads/6a16ef00-89af-4197-a128-918fd7f4bc64.png" 
-              alt="Drapeau Tunisien" 
+              src="/lovable-uploads/e07bb06a-cd83-4b82-83c6-f09e7cd9588c.png" 
+              alt="Logo Militaire" 
               className="h-8 w-auto mr-2"
             />
             <h1 className="text-2xl font-bold">Reserva</h1>
+            <img 
+              src="/lovable-uploads/6a16ef00-89af-4197-a128-918fd7f4bc64.png" 
+              alt="Drapeau Tunisien" 
+              className="h-8 w-auto ml-2"
+            />
           </div>
           <Button variant="outline" onClick={() => navigate('/login')} className="border-white hover:bg-white text-slate-950">
             Connexion
