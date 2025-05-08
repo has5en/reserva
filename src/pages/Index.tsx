@@ -30,8 +30,8 @@ const Index = () => {
       <main className="flex-1 container mx-auto p-8">
         <div className="max-w-4xl mx-auto text-center">
           <div className="flex justify-between items-center mb-8">
-            <img src="/lovable-uploads/6a16ef00-89af-4197-a128-918fd7f4bc64.png" alt="Drapeau Tunisien" className="h-32 w-auto" />
-            <img src="/lovable-uploads/e07bb06a-cd83-4b82-83c6-f09e7cd9588c.png" alt="Logo Militaire" className="h-32 w-auto" />
+            <img src="/lovable-uploads/6a16ef00-89af-4197-a128-918fd7f4bc64.png" alt="Drapeau Tunisien" className="h-24 w-auto" />
+            <img src="/lovable-uploads/e07bb06a-cd83-4b82-83c6-f09e7cd9588c.png" alt="Logo Militaire" className="h-24 w-auto" />
           </div>
           
           <h2 className="text-4xl font-bold mb-6">Plateforme de Réservation Intelligente</h2>
