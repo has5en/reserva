@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ const Index = () => {
       <header className="bg-primary text-white p-4">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            
+            <img src="/lovable-uploads/e07bb06a-cd83-4b82-83c6-f09e7cd9588c.png" alt="Logo Application" className="h-8 w-auto" />
             <h1 className="text-2xl font-bold">Reserva</h1>
           </div>
           <Button variant="outline" onClick={() => navigate('/login')} className="border-white hover:bg-white text-slate-950">
@@ -28,9 +29,9 @@ const Index = () => {
 
       <main className="flex-1 container mx-auto p-8">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="flex justify-center items-center mb-8 space-x-6">
-            <img src="/lovable-uploads/e07bb06a-cd83-4b82-83c6-f09e7cd9588c.png" alt="Logo Militaire" className="h-32 w-auto" />
+          <div className="flex justify-between items-center mb-8">
             <img src="/lovable-uploads/6a16ef00-89af-4197-a128-918fd7f4bc64.png" alt="Drapeau Tunisien" className="h-32 w-auto" />
+            <img src="/lovable-uploads/e07bb06a-cd83-4b82-83c6-f09e7cd9588c.png" alt="Logo Militaire" className="h-32 w-auto" />
           </div>
           
           <h2 className="text-4xl font-bold mb-6">Plateforme de Réservation Intelligente</h2>
